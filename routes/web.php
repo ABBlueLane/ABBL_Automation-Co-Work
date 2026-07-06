@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApiClientController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,9 @@ Route::controller(AuthController::class)->group(function (): void {
     Route::post('/login', 'login')->name('login.submit');
     Route::post('/logout', 'logout')->name('logout');
 });
+
+Route::post('/line/webhook/{secret?}', LineWebhookController::class)
+    ->name('line.webhook');
 
 Route::middleware('auth')->group(function (): void {
     Route::controller(ApiClientController::class)->prefix('api-clients')->name('api_clients.')->group(function (): void {

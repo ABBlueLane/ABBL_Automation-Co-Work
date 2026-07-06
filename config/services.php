@@ -28,6 +28,12 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'line' => [
+        'channel_secret' => env('LINE_CHANNEL_SECRET'),
+        'channel_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN'),
+        'webhook_route_secret' => env('LINE_WEBHOOK_ROUTE_SECRET'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
