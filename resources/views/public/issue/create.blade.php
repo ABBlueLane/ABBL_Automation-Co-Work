@@ -702,9 +702,7 @@ video/mp4,video/webm,video/quicktime,
         document.getElementById('commentTextarea').addEventListener('paste', handlePasteEvent);
 
         // ไอคอนแนบรูปภาพในกล่องรายละเอียด -> เปิดตัวเลือกไฟล์ของ dropzone
-        document.getElementById('commentAttachHint').addEventListener('click', function() {
-            document.querySelector('#browseTrigger').click();
-        });
+        
 
         $('#issueForm').on('keypress', function(e) {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
