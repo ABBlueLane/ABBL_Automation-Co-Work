@@ -55,39 +55,66 @@ class IssueController extends Controller
         return view('public.issue.view', compact('issue', 'comments', 'business'));
     }
 
-    public function table(Request $request, string $business): JsonResponse
+    public function table(Request $request, Business $business)
     {
-        $businessModel = Business::findOrFail($business);
+        // 1. เพิ่ม ->withCount('comments') เข้าไปในตอน Query ข้อมูล
+        $query = Issue::where('business_id', $business->id)
+                      ->withCount('comments'); // Laravel จะสร้างตัวแปร comments_count ให้นับอัตโนมัติ
 
-        $query = Issue::with('assignee')
-            ->where('business_id', $businessModel->id)
-            ->where('created_by', Auth::id());
-
-        $this->applyIssueFilters($query, $request);
-
-        $recordsTotal = (clone $query)->count();
-        $rows = $query->skip((int) $request->input('start', 0))
-            ->take((int) $request->input('length', 100))
-            ->get();
-
-        $data = [];
-        foreach ($rows as $i => $issue) {
-            $data[] = [
-                'DT_RowIndex' => (int) $request->input('start', 0) + $i + 1,
-                'issue_number' => '<a href="'.route('issue.view', [$businessModel->id, $issue->id]).'" class="text-primary">'.e($issue->issue_number).'</a>',
-                'title_html' => '<a href="'.route('issue.view', [$businessModel->id, $issue->id]).'" class="text-primary">'.e($issue->title).'</a>',
-                'assigned_to_html' => $issue->assignee?->full_name ?: '<span class="text-muted">-</span>',
-                'status_html' => $this->renderIssueStatusBadge($issue->status),
-            ];
+        // ฟิลเตอร์คำค้นหา
+        if ($request->filled('wording')) {
+            $wording = trim((string) $request->input('wording'));
+            $query->where(function ($subQuery) use ($wording) {
+                $subQuery->where('title', 'like', '%'.$wording.'%')
+                         ->orWhere('issue_number', 'like', '%'.$wording.'%')
+                         ->orWhere('description', 'like', '%'.$wording.'%');
+            });
         }
 
+        // ฟิลเตอร์สถานะ
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // ฟิลเตอร์ระดับความเร่งด่วน
+        if ($request->filled('priority')) {
+            $priority = (string) $request->input('priority');
+            if (in_array($priority, [Issue::PRIORITY_LOW, Issue::PRIORITY_MEDIUM, Issue::PRIORITY_HIGH], true)) {
+                $query->where('priority', $priority);
+            }
+        }
+
+        // คำนวณจำนวนรายการที่กรองแล้ว (ก่อน pagination)
+        $totalFilteredCount = (clone $query)->count();
+
+        $issues = $query->skip((int)$request->input('start', 0))
+                        ->take((int)$request->input('length', 100))
+                        ->get();
+
+        $data = [];
+        foreach ($issues as $issue) {
+        $data[] = [
+            'id' => $issue->id,
+            'issue_number' => $issue->issue_number,
+            'title_plain' => $issue->title,
+            'description' => $issue->description,
+            'status' => $issue->status,
+            'priority' => $issue->priority,
+            'view_url' => route('issue.view', [$business, $issue->id]), // หรือ Route ปลายทางของคุณ
+            'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'), // ตัวอย่างฟอร์แมต
+            
+            // 2. [จุดสำคัญ] ต้องส่งค่า comments_count กลับมาให้หน้าบ้านด้วย
+            'comments_count' => (int)$issue->comments_count,
+        ];
+    }
+
         return response()->json([
-            'draw' => (int) $request->input('draw', 1),
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsTotal,
+            'draw' => intval($request->draw),
+            'recordsTotal' => Issue::where('business_id', $business->id)->count(),
+            'recordsFiltered' => $totalFilteredCount, // จำนวนที่กรองแล้ว
             'data' => $data,
         ]);
-    }
+}
 
     public function create(Request $request, string $business)
     {
