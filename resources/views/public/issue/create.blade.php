@@ -413,9 +413,9 @@
                                 <span class="field-icon-label mb-2"><i class="ri-file-text-line"></i></span>
                                 <span class="fs-6 fw-semibold text-dark">รายละเอียด <span class="text-danger">*</span></span>
                                 <div class="position-relative mt-1">
-    <textarea name="comment" id="commentTextarea" rows="4" class="form-control"
-        placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
-</div>
+                                    <textarea name="comment" id="commentTextarea" rows="4" class="form-control"
+                                        placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
+                                </div>
                             </div>
                         </div>
 
@@ -732,7 +732,15 @@ video/mp4,video/webm,video/quicktime,
             return payload;
         }
 
+        // ==========================================
+        // จุดที่มีการแก้ไข (เพิ่มเงื่อนไขถ้าติ๊ก Checkbox)
+        // ==========================================
         function validateBeforeReview() {
+            // ถัาติ๊ก Checkbox "ไม่มี URL" ให้ Return Null เพื่อข้ามการเช็ค Validate ทันที!
+            if ($('#noUrlCheckbox').is(':checked')) {
+                return null;
+            }
+
             const title = $('input[name="title"]').val().trim();
             if (!title) {
                 return 'กรุณากรอกหัวข้อ';
@@ -751,6 +759,7 @@ video/mp4,video/webm,video/quicktime,
             }
             return null;
         }
+        // ==========================================
 
         function duplicateCommentBlocked() {
             let currentComment = $('#commentTextarea').val().trim();
@@ -936,7 +945,7 @@ video/mp4,video/webm,video/quicktime,
             Swal.fire({
                 icon: 'error',
                 title: 'ไฟล์ไม่รองรับ',
-                text: 'กรุณาอัปโหลดไฟล์ประเภทที่กำหนด'
+               text: 'กรุณาอัปโหลดไฟล์ประเภทที่กำหนด'
             });
 
         });
