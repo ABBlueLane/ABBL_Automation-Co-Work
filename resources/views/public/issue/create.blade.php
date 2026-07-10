@@ -1,20 +1,286 @@
 @extends('layouts.public')
 @section('content')
     <style>
+        :root {
+            --im-primary: #4f46e5;
+            --im-primary-dark: #3730a3;
+            --im-primary-soft: #eef0fe;
+            --im-border: #e5e7eb;
+            --im-text: #1f2937;
+            --im-text-muted: #6b7280;
+            --im-bg-card: #ffffff;
+            --im-radius-lg: 16px;
+            --im-radius-md: 12px;
+            --im-radius-sm: 8px;
+            --im-shadow-sm: 0 2px 8px rgba(17, 24, 39, 0.06);
+            --im-shadow-md: 0 8px 24px rgba(17, 24, 39, 0.08);
+            --im-space-1: 6px;
+            --im-space-2: 12px;
+            --im-space-3: 20px;
+            --im-space-4: 28px;
+        }
+
+        /* ---------- Page header card ---------- */
+        .container.py-4 > .row:first-child .card {
+            border: 1px solid var(--im-border);
+            border-radius: var(--im-radius-lg);
+            box-shadow: var(--im-shadow-sm);
+        }
+
+        .container.py-4 h4.mb-0 {
+            font-weight: 700;
+            color: var(--im-text);
+            letter-spacing: -0.01em;
+        }
+
+        .container.py-4 .breadcrumb-item a {
+            color: var(--im-text-muted);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .container.py-4 .breadcrumb-item a:hover { color: var(--im-primary); }
+        .container.py-4 .breadcrumb-item.active { color: var(--im-primary); font-weight: 600; }
+
+        h4.fw-bold.mb-3 {
+            color: var(--im-text);
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            margin-top: var(--im-space-3);
+        }
+
+        /* ---------- Dropzone ---------- */
         .active-dropzone {
-            border: 2px solid #0d6efd !important;
-            background-color: rgba(13, 110, 253, 0.05);
-            box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+            border: 2px solid var(--im-primary) !important;
+            background-color: var(--im-primary-soft);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
             transition: all 0.2s ease;
         }
-    </style>
-    <style>
+
+        .dropzone {
+            border-radius: var(--im-radius-md) !important;
+            border: 1.5px dashed #cbd5e1 !important;
+            background: #fafafa !important;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .dropzone:hover {
+            border-color: var(--im-primary) !important;
+            background: var(--im-primary-soft) !important;
+        }
         .dropzone::after {
             content: attr(data-text);
             display: block;
             text-align: center;
-            color: #6c757d;
-            margin-top: 10px;
+            color: var(--im-text-muted);
+            margin-top: var(--im-space-1);
+            font-size: 0.8rem;
+        }
+        .dz-message i {
+            color: var(--im-primary);
+        }
+
+        /* ---------- Priority dots ---------- */
+        .priority-picker {
+            display: flex;
+            align-items: center;
+            gap: var(--im-space-3);
+        }
+
+        .priority-dot-wrap {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .priority-dot-wrap .btn-check {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .priority-dot {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-block;
+            border: 3px solid transparent;
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
+            transition: all .18s ease;
+        }
+
+        .priority-dot:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-check:checked+.priority-dot {
+            border-color: var(--im-text);
+            box-shadow: 0 0 0 3px #fff inset, 0 0 0 5px rgba(31, 41, 55, .14);
+            transform: scale(1.06);
+        }
+
+        /* ---------- Field icon labels --- */
+        .field-icon-label {
+            font-size: 1.05rem;
+            color: var(--im-primary);
+            margin-bottom: var(--im-space-1);
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* ---------- Comment box inline attach hint ---------- */
+        .comment-attach-hint {
+            position: absolute;
+            right: 14px;
+            bottom: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--im-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, .3);
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        .comment-attach-hint:hover {
+            background: var(--im-primary-dark);
+            transform: scale(1.06);
+        }
+
+        /* ---------- Icon-only action buttons ---------- */
+        .btn-icon-action {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--im-radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: transform 0.15s ease;
+        }
+        .btn-icon-action:hover {
+            transform: translateY(-2px);
+        }
+        #reviewBtn.btn-primary {
+            background: var(--im-primary);
+            border-color: var(--im-primary);
+            box-shadow: var(--im-shadow-sm);
+        }
+        #reviewBtn.btn-primary:hover {
+            background: var(--im-primary-dark);
+            border-color: var(--im-primary-dark);
+        }
+
+        /* ---------- Consistent field framing ---------- */
+        .field-box {
+            background: var(--im-bg-card);
+            border: 1px solid var(--im-border);
+            border-radius: var(--im-radius-md);
+            padding: var(--im-space-3) var(--im-space-4);
+            height: 100%;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .field-box:focus-within {
+            border-color: var(--im-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .field-box .form-control,
+        .field-box .form-select {
+            border-radius: var(--im-radius-sm);
+            border-color: var(--im-border);
+            padding: 10px 14px;
+        }
+        .field-box .form-control:focus,
+        .field-box .form-select:focus {
+            border-color: var(--im-primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* ---------- Step status indicator ---------- */
+        #issueStepper {
+            padding: var(--im-space-3) 0;
+            margin-bottom: var(--im-space-3) !important;
+        }
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .step-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--im-primary-soft);
+            color: var(--im-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all .2s ease;
+        }
+
+        .step-circle.active {
+            background: var(--im-primary);
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(79, 70, 229, .14);
+        }
+
+        .step-label {
+            text-align: center;
+            font-size: .8rem;
+            font-weight: 600;
+            color: var(--im-text-muted);
+            margin-top: var(--im-space-1);
+            white-space: nowrap;
+        }
+
+        .step-arrow {
+            color: #cbd5e1;
+            font-size: 1.3rem;
+            margin: 0 var(--im-space-3);
+            padding-bottom: 1.8rem;
+        }
+
+        /* ---------- Main form card ---------- */
+        .card.shadow-sm {
+            border: 1px solid var(--im-border);
+            border-radius: var(--im-radius-lg);
+            box-shadow: var(--im-shadow-md) !important;
+        }
+        .card.shadow-sm .card-body {
+            padding: var(--im-space-4);
+        }
+
+        /* ---------- Modal polish ---------- */
+        #issueReviewModal .modal-content {
+            border-radius: var(--im-radius-lg);
+            border: none;
+            box-shadow: var(--im-shadow-md);
+        }
+        #issueReviewModal .modal-header {
+            border-bottom: 1px solid var(--im-border);
+            padding: var(--im-space-3) var(--im-space-4);
+        }
+        #issueReviewModal .modal-footer {
+            border-top: 1px solid var(--im-border);
+            padding: var(--im-space-3) var(--im-space-4);
+        }
+        #reviewSubmitBtn {
+            border-radius: var(--im-radius-sm);
+            font-weight: 600;
+            padding: 10px 24px;
+        }
+        #reviewBackBtn {
+            border-radius: var(--im-radius-sm);
+            font-weight: 500;
         }
     </style>
     <div class="container py-4">
@@ -54,126 +320,163 @@
                 </div>
             </div>
         </div>
-        <div class="card shadow-sm">
 
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <h4 class="card-title mb-0">
-                    <i class="ri-bug-line me-1"></i>
-                    แจ้งปัญหา
-                </h4>
+        <h4 class="fw-bold mb-3">
+            <i class="ri-file-list-3-line me-1"></i>
+            รายงานปัญหา
+        </h4>
+
+        <div class="d-flex align-items-start justify-content-center mb-4" id="issueStepper">
+            <div class="step-item" data-step="1">
+                <div class="step-circle active">1</div>
+                <div class="step-label">เพิ่มข้อมูล</div>
             </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">รีวิว</div>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step-item" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">บันทึกข้อมูล</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
             <div class="card-body">
                 <form id="issueForm" action="#" method="POST">
                     @csrf
                     <input type="hidden" name="draft_issue_id" id="draftIssueId"
                         value="{{ ($issue?->status ?? null) === \App\Models\Issue::STATUS_DRAFT ? $issue->id : '' }}">
-                    <div class="row g-3">
-                        {{-- หัวเรื่อง --}}
-                        <div class="col-lg-12">
-                            <label class="form-label fw-semibold">
-                                <i class="ri-edit-line me-1"></i>
-                                เรื่อง <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" name="title" class="form-control"
-                                value="{{ old('title', $issue?->title ?? '') }}" placeholder="กรอกหัวข้อของปัญหา">
-                        </div>
-                        <div class="col-lg-12">
-                            <label class="form-label fw-semibold">
-                                <i class="ri-alarm-warning-line me-1"></i>
-                                ความเร่งด่วน <span class="text-danger">*</span>
-                            </label>
-                            <select name="priority" class="form-select">
-                                @foreach (\App\Models\Issue::getPriorityOptions() as $value => $label)
-                                    <option value="{{ $value }}"
-                                        @selected((string) old('priority', $issue?->priority ?? \App\Models\Issue::PRIORITY_MEDIUM) === (string) $value)>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        @if ($isIssueEmployee)
-                            <div class="col-lg-12">
-                                <label class="form-label fw-semibold">
-                                    <i class="ri-project-line me-1"></i>
-                                    โปรเจค <span class="text-danger">*</span>
-                                    <span class="text-muted fw-normal">(จำเป็นตอนส่งเข้าระบบ)</span>
-                                </label>
-                                <select name="issue_project_id" id="issue_project_id" class="form-select">
-                                    <option value="">เลือกโปรเจค</option>
-                                    @foreach ($issueProjects as $project)
-                                        <option value="{{ $project->id }}"
-                                            @selected((string) old('issue_project_id', $issue?->issue_project_id ?? '') === (string) $project->id)>
-                                            {{ $project->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @endif
-                        {{-- Upload --}}
-                        <div class="col-lg-12">
 
-                            <label class="form-label fw-semibold">
-                                <i class="ri-attachment-2 me-1"></i>
-                                แนบไฟล์
-                            </label>
-                            <div class="dropzone border rounded-3 p-5 text-center bg-light" id="mediaDropzone"
-                                tabindex="0">
+                    <div class="row g-3 align-items-stretch">
+                        {{-- หัวเรื่อง + โปรเจค --}}
+                        <div class="col-lg-7">
+                            <div class="field-box">
+                                <span class="field-icon-label mb-2"><i class="ri-edit-line"></i></span>
+                                <span class="fs-6 fw-semibold text-dark">ปัญหา <span class="text-danger">*</span></span>
+                                <input type="text" name="title" class="form-control mt-1"
+                                    value="{{ old('title', $issue?->title ?? '') }}" placeholder="กรอกหัวข้อของปัญหา">
 
-                                <div class="dz-message">
-                                    <i class="ri-upload-cloud-2-line fs-1 text-muted"></i>
-
-                                    <p class="mt-2 mb-1">
-                                        ลากไฟล์มาวาง หรือ
-                                        <span id="browseTrigger" class="text-primary fw-semibold" style="cursor:pointer;">
-                                            คลิกที่นี่
-                                        </span>
-                                        เพื่ออัปโหลด
-                                    </p>
-
-                                    <p class="mb-0">
-                                        หรือกด <b>Ctrl + V</b> เพื่อวางภาพ
-                                    </p>
-
-                                    <small class="text-muted">
-                                        รองรับภาพ วิดีโอ เอกสาร (PDF, Word, Excel, CSV) และไฟล์ข้อความ (MD, HTML, TXT, JSON, XML ฯลฯ)
-                                    </small>
+                                <div class="mt-3">
+                                    <span class="field-icon-label mb-2"><i class="ri-building-2-line"></i></span>
+                                    <span class="fs-6 fw-semibold text-dark">โปรเจค <span class="text-danger">*</span></span>
+                                    <select name="issue_project_id" id="issue_project_id" class="form-select mt-1">
+                                        <option value="">เลือกโปรเจค (บริษัท)</option>
+                                        @foreach (\App\Models\Business::orderBy('business_name')->get() as $biz)
+                                            <option value="{{ $biz->id }}"
+                                                @selected((string) old('issue_project_id', $issue?->issue_project_id ?? $business?->id ?? '') === (string) $biz->id)>
+                                                {{ $biz->business_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        {{-- URL --}}
-                        <div class="col-lg-12">
-                            <label class="form-label fw-semibold">
-                                <i class="ri-links-line me-1"></i>
-                                แนบลิงก์ <span class="text-danger">*</span>
-                            </label>
-                            <input type="url" name="url" id="urlInput" class="form-control"
-                                value="{{ old('url', $issue?->url ?? '') }}" placeholder="https://example.com">
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" id="noUrlCheckbox">
-                                <label class="form-check-label text-muted" for="noUrlCheckbox">
-                                    ไม่มี URL สำหรับการแจ้งปัญหานี้
-                                </label>
+                        <div class="col-lg-5">
+                            <div class="field-box d-flex flex-column align-items-center justify-content-center text-center">
+                                <small class="text-muted mb-2">ระดับความเร่งด่วน</small>
+                                <div class="priority-picker">
+                                    <i class="ri-alarm-warning-line fs-3 text-muted"></i>
+                                    @php
+                                        $priorityColors = [
+                                            \App\Models\Issue::PRIORITY_HIGH ?? 'high' => '#28a745',
+                                            \App\Models\Issue::PRIORITY_MEDIUM ?? 'medium' => '#ffc107',
+                                            \App\Models\Issue::PRIORITY_LOW ?? 'low' => '#dc3545',
+                                        ];
+                                        $priorityCaptionsByColor = [
+                                            '#dc3545' => 'มาก',
+                                            '#ffc107' => 'กลาง',
+                                            '#28a745' => 'น้อย',
+                                        ];
+                                        $selectedPriority = (string) old('priority', $issue?->priority ?? \App\Models\Issue::PRIORITY_MEDIUM);
+                                    @endphp
+                                    @foreach (\App\Models\Issue::getPriorityOptions() as $value => $label)
+                                        <span class="priority-dot-wrap d-flex flex-column align-items-center">
+                                            <input class="btn-check" type="radio" name="priority" id="priority_{{ $value }}"
+                                                value="{{ $value }}" @checked($selectedPriority === (string) $value)>
+                                            <label class="priority-dot" for="priority_{{ $value }}" title="{{ $label }}"
+                                                style="background-color: {{ $priorityColors[$value] ?? '#6c757d' }};"></label>
+                                            <small class="text-muted mt-1" style="font-size: .7rem;">
+                                                {{ $priorityCaptionsByColor[$priorityColors[$value] ?? ''] ?? '' }}
+                                            </small>
+                                        </span>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
+
                         {{-- รายละเอียด --}}
                         <div class="col-lg-12">
-                            <label class="form-label fw-semibold">
-                                <i class="ri-file-text-line me-1"></i>
-                                รายละเอียด
-                            </label>
-                            <textarea name="comment" rows="4" class="form-control" placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
+                            <div class="field-box">
+                                <span class="field-icon-label mb-2"><i class="ri-file-text-line"></i></span>
+                                <span class="fs-6 fw-semibold text-dark">รายละเอียด <span class="text-danger">*</span></span>
+                                <div class="position-relative mt-1">
+                                    <textarea name="comment" id="commentTextarea" rows="4" class="form-control"
+                                        placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
+                                    <span class="comment-attach-hint" id="commentAttachHint"
+                                        title="แนบรูปภาพ หรือวางรูปภาพด้วย Ctrl+V">
+                                        <i class="ri-image-add-line"></i>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
+
+                        {{-- แนบไฟล์ + ลิงก์ --}}
+                        <div class="col-lg-7">
+                            <div class="field-box">
+                                <span class="field-icon-label mb-2"><i class="ri-attachment-2"></i></span>
+                                <span class="fs-6 fw-semibold text-dark">แนบไฟล์</span>
+                                <div class="dropzone border rounded-3 p-4 text-center bg-light mt-1" id="mediaDropzone"
+                                    tabindex="0">
+                                    <div class="dz-message">
+                                        <i class="ri-upload-cloud-2-line fs-2 text-muted"></i>
+                                        <p class="mt-2 mb-1 small">
+                                            ลากไฟล์มาวาง หรือ
+                                            <span id="browseTrigger" class="text-primary fw-semibold" style="cursor:pointer;">
+                                                คลิกที่นี่
+                                            </span>
+                                            หรือ <b>Ctrl + V</b> เพื่อวางภาพ
+                                        </p>
+                                        <small class="text-muted d-block">
+                                            รองรับภาพ วิดีโอ เอกสาร (PDF, Word, Excel, CSV) และไฟล์ข้อความ
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="field-box">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="field-icon-label mb-0">
+                                        <i class="ri-links-line me-1"></i>
+                                        <span class="fs-6 fw-semibold text-dark">แนบลิงก์ <span class="text-danger">*</span></span>
+                                    </span>
+                                </div>
+                                <input type="url" name="url" id="urlInput" class="form-control"
+                                    value="{{ old('url', $issue?->url ?? '') }}" placeholder="https://example.com">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="noUrlCheckbox">
+                                    <label class="form-check-label text-muted small" for="noUrlCheckbox">
+                                        ไม่มี URL สำหรับการแจ้งปัญหานี้
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         {{-- ปุ่ม --}}
                         <div class="col-lg-12 pt-2">
                             <div class="d-flex flex-wrap justify-content-end gap-2">
-                                <a href="{{ route('issue.index', $business) }}" class="btn btn-light">
-                                    ยกเลิก
+                                <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-danger btn-icon-action"
+                                    title="ยกเลิก">
+                                    <i class="ri-delete-bin-line"></i>
                                 </a>
-                                <button type="button" class="btn btn-primary px-4" id="reviewBtn">
-                                    <i class="ri-eye-line me-1"></i>
-                                    รีวิว
+                                <button type="button" class="btn btn-primary btn-icon-action" id="reviewBtn"
+                                    title="รีวิวก่อนส่ง">
+                                    <i class="ri-send-plane-fill"></i>
                                 </button>
-
                             </div>
                         </div>
                     </div>
@@ -217,6 +520,13 @@
         const issueIndexBase = "{{ route('issue.index', $business) }}";
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
+
+        function setActiveStep(step) {
+            document.querySelectorAll('#issueStepper .step-item').forEach(function(item) {
+                const circle = item.querySelector('.step-circle');
+                circle.classList.toggle('active', parseInt(item.dataset.step, 10) === step);
+            });
+        }
 
         let myDropzone = new Dropzone("#mediaDropzone", {
             url: "{{ route('issue.upload', $business) }}",
@@ -382,7 +692,7 @@ video/mp4,video/webm,video/quicktime,
             dropzoneElement.setAttribute('data-text', 'คลิกหรือวางไฟล์');
         });
 
-        dropzoneElement.addEventListener('paste', function(e) {
+        function handlePasteEvent(e) {
             const items = (e.clipboardData || window.clipboardData).items;
 
             for (let i = 0; i < items.length; i++) {
@@ -391,6 +701,16 @@ video/mp4,video/webm,video/quicktime,
                     myDropzone.addFile(file);
                 }
             }
+        }
+
+        dropzoneElement.addEventListener('paste', handlePasteEvent);
+
+        // อนุญาตให้วางรูปภาพขณะโฟกัสอยู่ในช่องรายละเอียดได้ด้วย
+        document.getElementById('commentTextarea').addEventListener('paste', handlePasteEvent);
+
+        // ไอคอนแนบรูปภาพในกล่องรายละเอียด -> เปิดตัวเลือกไฟล์ของ dropzone
+        document.getElementById('commentAttachHint').addEventListener('click', function() {
+            document.querySelector('#browseTrigger').click();
         });
 
         $('#issueForm').on('keypress', function(e) {
@@ -404,13 +724,13 @@ video/mp4,video/webm,video/quicktime,
         });
 
         function buildSubmitPayload() {
-            let currentComment = $('textarea[name="comment"]').val().trim();
+            let currentComment = $('#commentTextarea').val().trim();
             let allFiles = [...existingFiles, ...uploadedFiles];
             allFiles = allFiles.filter(f => f !== "add-more");
             const payload = {
                 _token: "{{ csrf_token() }}",
                 title: $('input[name="title"]').val().trim(),
-                priority: $('select[name="priority"]').val() || '',
+                priority: $('input[name="priority"]:checked').val() || '',
                 comment: currentComment,
                 url: $('#noUrlCheckbox').is(':checked') ? '' : ($('#urlInput').val() || ''),
                 files: allFiles
@@ -426,7 +746,7 @@ video/mp4,video/webm,video/quicktime,
             if (!title) {
                 return 'กรุณากรอกหัวข้อ';
             }
-            if (!$('select[name="priority"]').val()) {
+            if (!$('input[name="priority"]:checked').val()) {
                 return 'กรุณาเลือกความเร่งด่วน';
             }
             if ($('select[name="issue_project_id"]').length && !$('select[name="issue_project_id"]').val()) {
@@ -442,7 +762,7 @@ video/mp4,video/webm,video/quicktime,
         }
 
         function duplicateCommentBlocked() {
-            let currentComment = $('textarea[name="comment"]').val().trim();
+            let currentComment = $('#commentTextarea').val().trim();
             return isDuplicateTemplate && originalComment && currentComment === originalComment;
         }
 
@@ -457,6 +777,7 @@ video/mp4,video/webm,video/quicktime,
                     $('#issueReviewModalBody').html(html);
                     const modalEl = document.getElementById('issueReviewModal');
                     bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    setActiveStep(2);
                 },
                 error: function(xhr) {
                     Swal.close();
@@ -490,7 +811,15 @@ video/mp4,video/webm,video/quicktime,
                 success: function(res) {
                     Swal.close();
                     if (res.redirect) {
-                        window.location.href = res.redirect;
+                        // แจ้งผลสำเร็จก่อน แล้วค่อยพาไปหน้ารายละเอียด
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'บันทึกข้อมูลสำเร็จ',
+                            text: 'รายการของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว',
+                            confirmButtonText: 'ตกลง'
+                        }).then(() => {
+                            window.location.href = res.redirect;
+                        });
                         return;
                     }
                     Swal.fire({
@@ -569,18 +898,34 @@ video/mp4,video/webm,video/quicktime,
                 });
                 return;
             }
+
+            // ถามยืนยันก่อนส่งเข้าระบบจริง
             Swal.fire({
-                title: 'กำลังส่ง...',
-                allowOutsideClick: false,
-                didOpen: () => Swal.showLoading()
+                icon: 'question',
+                title: 'ยืนยันการส่งเข้าระบบ?',
+                text: 'เมื่อส่งแล้วจะไม่สามารถแก้ไขข้อมูลนี้ในหน้านี้ได้อีก',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก',
+                reverseButtons: true
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'กำลังส่ง...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                pendingQueueAction = 'submit';
+                if (myDropzone.getQueuedFiles().length > 0) {
+                    myDropzone.processQueue();
+                } else {
+                    pendingQueueAction = null;
+                    runFinalSubmit();
+                }
             });
-            pendingQueueAction = 'submit';
-            if (myDropzone.getQueuedFiles().length > 0) {
-                myDropzone.processQueue();
-            } else {
-                pendingQueueAction = null;
-                runFinalSubmit();
-            }
         });
 
         myDropzone.on('queuecomplete', function() {
