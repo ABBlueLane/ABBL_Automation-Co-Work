@@ -682,10 +682,7 @@ video/mp4,video/webm,video/quicktime,
 
         dropzoneElement.addEventListener('click', () => dropzoneElement.focus());
 
-        dropzoneElement.addEventListener('focus', () => {
-            dropzoneElement.classList.add('active-dropzone');
-            dropzoneElement.setAttribute('data-text', '📥 วางรูปภาพที่นี่');
-        });
+       
 
         dropzoneElement.addEventListener('blur', () => {
             dropzoneElement.classList.remove('active-dropzone');
