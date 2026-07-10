@@ -40,6 +40,11 @@ class LineChatSource extends Model
         return $this->hasMany(LineChatMessage::class);
     }
 
+    public function imsSubmissions(): HasMany
+    {
+        return $this->hasMany(LineImsSubmission::class);
+    }
+
     public function draftIssue(): BelongsTo
     {
         return $this->belongsTo(Issue::class, 'draft_issue_id');
@@ -56,5 +61,26 @@ class LineChatSource extends Model
     public function formState(): array
     {
         return $this->form_state ?? [];
+    }
+
+    /**
+     * Default form_state for issue_create flow.
+     *
+     * @return array<string, mixed>
+     */
+    public static function defaultIssueCreateFormState(): array
+    {
+        return [
+            'title' => null,
+            'priority' => 'medium',
+            'url' => null,
+            'no_url' => false,
+            'comment' => '',
+            'files' => [],
+            'missing_fields' => ['title', 'url_or_no_url'],
+            'last_message_id' => null,
+            'submitted_issue_id' => null,
+            'submitted_at' => null,
+        ];
     }
 }
