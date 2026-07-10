@@ -42,6 +42,7 @@ class IssueCommentController extends Controller
             'comment' => $comment->load('user'),
         ]);
     }
+    
 
     public function staffStore(Request $request, string $business, int $id): JsonResponse
     {
