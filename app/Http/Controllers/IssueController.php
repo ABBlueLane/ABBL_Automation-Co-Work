@@ -250,9 +250,19 @@ class IssueController extends Controller
             return $newIssue;
         });
 
+        $issue->load(['firstComment', 'creator', 'assignee', 'issueProject']);
+
         return response()->json([
             'success' => true,
             'redirect' => route('issue.view', [$business, $issue->id]),
+            'issue_number' => $issue->issue_number,
+            'issue_id' => $issue->id,
+            'html' => view('public.issue.view-content', [
+                'issue' => $issue,
+                'comments' => collect([]),
+                'business' => $business,
+                'isPreview' => false,
+            ])->render(),
         ]);
     }
 
@@ -314,9 +324,19 @@ class IssueController extends Controller
             }
         });
 
+        $issue = $issue->fresh()->load(['firstComment', 'creator', 'assignee', 'issueProject']);
+
         return response()->json([
             'success' => true,
             'redirect' => route('issue.view', [$business, $issue->id]),
+            'issue_number' => $issue->issue_number,
+            'issue_id' => $issue->id,
+            'html' => view('public.issue.view-content', [
+                'issue' => $issue,
+                'comments' => collect([]),
+                'business' => $business,
+                'isPreview' => false,
+            ])->render(),
         ]);
     }
 
@@ -390,10 +410,11 @@ class IssueController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'priority' => ['required', 'in:'.implode(',', array_keys(Issue::getPriorityOptions()))],
-            'comment' => 'nullable|string',
+            'comment' => 'required|string',
             'url' => 'nullable|url|max:2048',
             'files' => 'nullable|array',
             'files.*' => 'string',
+            'issue_project_id' => ['nullable', 'integer', 'exists:issue_projects,id'],
         ]);
 
         $issue = new Issue;
@@ -411,9 +432,14 @@ class IssueController extends Controller
         $comment->files = (array) $request->input('files', []);
         $issue->setRelation('firstComment', $comment);
 
+        $issueProject = $request->filled('issue_project_id')
+            ? IssueProject::find((int) $request->input('issue_project_id'))
+            : null;
+        $issue->setRelation('issueProject', $issueProject);
+
         $comments = collect([]);
 
-        return view('public.issue._preview_wrapper', compact('issue', 'comments', 'business'))->render();
+        return view('public.issue._form_review_summary', compact('issue', 'issueProject', 'business'))->render();
     }
 
     public function staffIndex(Request $request, string $business)
@@ -699,7 +725,7 @@ class IssueController extends Controller
         return [
             'title' => 'required|string|max:255',
             'priority' => ['required', 'in:'.implode(',', array_keys(Issue::getPriorityOptions()))],
-            'comment' => 'nullable|string',
+            'comment' => 'required|string',
             'url' => 'nullable|url|max:2048',
             'files' => 'nullable|array',
             'files.*' => 'string',

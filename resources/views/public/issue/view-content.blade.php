@@ -1,8 +1,9 @@
 <div class="col-lg-12">
     {{-- เช็คแบบ !empty ป้องกันกรณีไม่ได้ส่งตัวแปร $isPreview มาจาก Controller --}}
     @if (!empty($isPreview))
-        <div class="alert alert-warning mb-3">
-             Preview Mode (ยังไม่ได้บันทึก)
+        <div class="alert alert-info mb-3">
+            <i class="ri-information-line me-1"></i>
+            ข้อมูลด้านล่างเป็นสรุปก่อนบันทึก (ยังไม่ได้บันทึกเข้าระบบ)
         </div>
     @endif
     

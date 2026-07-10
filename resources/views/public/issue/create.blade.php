@@ -233,6 +233,81 @@
             box-shadow: 0 0 0 5px rgba(79, 70, 229, .14);
         }
 
+        .step-circle.done {
+            background: #10b981;
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(16, 185, 129, .14);
+        }
+
+        .step-item.done .step-label,
+        .step-item.active .step-label {
+            color: var(--im-primary);
+            font-weight: 700;
+        }
+
+        .step-arrow.done {
+            color: #10b981;
+        }
+
+        .wizard-step-actions {
+            border-top: 1px solid var(--im-border);
+            margin-top: var(--im-space-3);
+            padding-top: var(--im-space-3);
+        }
+
+        .success-step-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #ecfdf5;
+            color: #10b981;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: var(--im-space-2);
+        }
+
+        .ims-number-badge {
+            display: inline-block;
+            background: var(--im-primary-soft);
+            color: var(--im-primary-dark);
+            font-size: 1.25rem;
+            font-weight: 800;
+            padding: 10px 20px;
+            border-radius: var(--im-radius-sm);
+            letter-spacing: 0.02em;
+        }
+
+        .review-field-box {
+            background: var(--im-bg-card);
+            border: 1px solid var(--im-border);
+            border-radius: var(--im-radius-md);
+            padding: var(--im-space-3) var(--im-space-4);
+            height: 100%;
+        }
+
+        .review-field-label {
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--im-text-muted);
+            margin-bottom: 6px;
+        }
+
+        .review-field-value {
+            color: var(--im-text);
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .review-priority-dot {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 3px solid var(--im-text);
+            display: inline-block;
+        }
+
         .step-label {
             text-align: center;
             font-size: .8rem;
@@ -260,19 +335,6 @@
         }
 
         /* ---------- Modal polish ---------- */
-        #issueReviewModal .modal-content {
-            border-radius: var(--im-radius-lg);
-            border: none;
-            box-shadow: var(--im-shadow-md);
-        }
-        #issueReviewModal .modal-header {
-            border-bottom: 1px solid var(--im-border);
-            padding: var(--im-space-3) var(--im-space-4);
-        }
-        #issueReviewModal .modal-footer {
-            border-top: 1px solid var(--im-border);
-            padding: var(--im-space-3) var(--im-space-4);
-        }
         #reviewSubmitBtn {
             border-radius: var(--im-radius-sm);
             font-weight: 600;
@@ -281,6 +343,11 @@
         #reviewBackBtn {
             border-radius: var(--im-radius-sm);
             font-weight: 500;
+        }
+        #reviewBtn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none;
         }
     </style>
     <div class="container py-4">
@@ -329,22 +396,24 @@
         <div class="d-flex align-items-start justify-content-center mb-4" id="issueStepper">
             <div class="step-item" data-step="1">
                 <div class="step-circle active">1</div>
-                <div class="step-label">เพิ่มข้อมูล</div>
+                <div class="step-label">กรอกข้อมูล</div>
             </div>
             <div class="step-arrow">→</div>
             <div class="step-item" data-step="2">
                 <div class="step-circle">2</div>
-                <div class="step-label">รีวิว</div>
+                <div class="step-label">สรุปข้อมูล</div>
             </div>
             <div class="step-arrow">→</div>
             <div class="step-item" data-step="3">
                 <div class="step-circle">3</div>
-                <div class="step-label">บันทึกข้อมูล</div>
+                <div class="step-label">บันทึกสำเร็จ</div>
             </div>
         </div>
 
         <div class="card shadow-sm">
             <div class="card-body">
+                {{-- Step 1: ฟอร์มกรอกข้อมูล --}}
+                <div id="stepPanel1" class="wizard-step">
                 <form id="issueForm" action="#" method="POST">
                     @csrf
                     <input type="hidden" name="draft_issue_id" id="draftIssueId"
@@ -362,12 +431,21 @@
                                 <div class="mt-3">
                                     <span class="field-icon-label mb-2"><i class="ri-building-2-line"></i></span>
                                     <span class="fs-6 fw-semibold text-dark">โปรเจค <span class="text-danger">*</span></span>
+                                    @php
+                                        $currentBusiness = \App\Models\Business::find($business);
+                                        $selectedIssueProjectId = old(
+                                            'issue_project_id',
+                                            $issue?->issue_project_id
+                                                ?? optional($issueProjects->firstWhere('name', $currentBusiness?->business_name))->id
+                                                ?? ''
+                                        );
+                                    @endphp
                                     <select name="issue_project_id" id="issue_project_id" class="form-select mt-1">
                                         <option value="">เลือกโปรเจค (บริษัท)</option>
-                                        @foreach (\App\Models\Business::orderBy('business_name')->get() as $biz)
-                                            <option value="{{ $biz->id }}"
-                                                @selected((string) old('issue_project_id', $issue?->issue_project_id ?? $business?->id ?? '') === (string) $biz->id)>
-                                                {{ $biz->business_name }}
+                                        @foreach ($issueProjects as $project)
+                                            <option value="{{ $project->id }}"
+                                                @selected((string) $selectedIssueProjectId === (string) $project->id)>
+                                                {{ $project->name }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -470,35 +548,55 @@
                                     <i class="ri-delete-bin-line"></i>
                                 </a>
                                 <button type="button" class="btn btn-primary btn-icon-action" id="reviewBtn"
-                                    title="รีวิวก่อนส่ง">
-                                    <i class="ri-send-plane-fill"></i>
+                                    title="ถัดไป">
+                                    <i class="ri-arrow-right-line"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
+                </div>
 
-    <div class="modal fade" id="issueReviewModal" tabindex="-1" aria-labelledby="issueReviewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="issueReviewModalLabel">
-                        <i class="ri-eye-line me-1"></i> รีวิวก่อนส่ง
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                {{-- Step 2: สรุปข้อมูล + ปุ่มบันทึก --}}
+                <div id="stepPanel2" class="wizard-step d-none">
+                    <div class="mb-3">
+                        <h5 class="fw-bold mb-1">
+                            <i class="ri-eye-line me-1 text-primary"></i>
+                            ตรวจสอบข้อมูลก่อนบันทึก
+                        </h5>
+                        <p class="text-muted small mb-0">กรุณาตรวจสอบความถูกต้องก่อนกดบันทึกเข้าระบบ</p>
+                    </div>
+                    <div id="issueReviewBody"></div>
+                    <div class="wizard-step-actions d-flex flex-wrap justify-content-between gap-2">
+                        <button type="button" class="btn btn-light" id="reviewBackBtn">
+                            <i class="ri-arrow-left-line me-1"></i> กลับไปแก้ไข
+                        </button>
+                        <button type="button" class="btn btn-success" id="reviewSubmitBtn">
+                            <i class="ri-save-line me-1"></i> บันทึกเข้าระบบ
+                        </button>
+                    </div>
                 </div>
-                <div class="modal-body" id="issueReviewModalBody">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" id="reviewBackBtn" data-bs-dismiss="modal">
-                        <i class="ri-arrow-left-line me-1"></i> กลับไปแก้ไข
-                    </button>
-                    <button type="button" class="btn btn-success" id="reviewSubmitBtn">
-                        <i class="ri-send-plane-line me-1"></i> ส่งเข้าระบบ
-                    </button>
+
+                {{-- Step 3: ผลการบันทึก + เลข IMS --}}
+                <div id="stepPanel3" class="wizard-step d-none">
+                    <div class="text-center py-3 mb-3">
+                        <div class="success-step-icon">
+                            <i class="ri-checkbox-circle-line"></i>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">บันทึกข้อมูลสำเร็จ</h4>
+                        <p class="text-muted mb-2">รายการของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
+                        <div class="mb-1 text-muted small">เลข IMS</div>
+                        <div class="ims-number-badge" id="savedIssueNumber">-</div>
+                    </div>
+                    <div id="step3DetailBody"></div>
+                    <div class="wizard-step-actions d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-secondary">
+                            <i class="ri-list-check me-1"></i> กลับหน้ารายการ
+                        </a>
+                        <a href="#" class="btn btn-primary" id="viewIssueBtn">
+                            <i class="ri-external-link-line me-1"></i> ดูรายละเอียด
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -516,12 +614,42 @@
         const issueIndexBase = "{{ route('issue.index', $business) }}";
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
+        let currentStep = 1;
 
         function setActiveStep(step) {
+            currentStep = step;
+            const arrows = document.querySelectorAll('#issueStepper .step-arrow');
             document.querySelectorAll('#issueStepper .step-item').forEach(function(item) {
+                const stepNum = parseInt(item.dataset.step, 10);
                 const circle = item.querySelector('.step-circle');
-                circle.classList.toggle('active', parseInt(item.dataset.step, 10) === step);
+                circle.classList.remove('active', 'done');
+                item.classList.remove('active', 'done');
+
+                if (stepNum < step) {
+                    circle.classList.add('done');
+                    item.classList.add('done');
+                    circle.innerHTML = '<i class="ri-check-line"></i>';
+                } else if (stepNum === step) {
+                    circle.classList.add('active');
+                    item.classList.add('active');
+                    circle.textContent = stepNum;
+                } else {
+                    circle.textContent = stepNum;
+                }
             });
+
+            arrows.forEach(function(arrow, index) {
+                arrow.classList.toggle('done', index < step - 1);
+            });
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.wizard-step').forEach(function(panel) {
+                panel.classList.add('d-none');
+            });
+            document.getElementById('stepPanel' + step).classList.remove('d-none');
+            setActiveStep(step);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         let myDropzone = new Dropzone("#mediaDropzone", {
@@ -732,15 +860,7 @@ video/mp4,video/webm,video/quicktime,
             return payload;
         }
 
-        // ==========================================
-        // จุดที่มีการแก้ไข (เพิ่มเงื่อนไขถ้าติ๊ก Checkbox)
-        // ==========================================
         function validateBeforeReview() {
-            // ถัาติ๊ก Checkbox "ไม่มี URL" ให้ Return Null เพื่อข้ามการเช็ค Validate ทันที!
-            if ($('#noUrlCheckbox').is(':checked')) {
-                return null;
-            }
-
             const title = $('input[name="title"]').val().trim();
             if (!title) {
                 return 'กรุณากรอกหัวข้อ';
@@ -751,6 +871,10 @@ video/mp4,video/webm,video/quicktime,
             if ($('select[name="issue_project_id"]').length && !$('select[name="issue_project_id"]').val()) {
                 return 'กรุณาเลือกโปรเจค';
             }
+            const comment = $('#commentTextarea').val().trim();
+            if (!comment) {
+                return 'กรุณากรอกรายละเอียด';
+            }
             if (!$('#noUrlCheckbox').is(':checked')) {
                 const u = ($('#urlInput').val() || '').trim();
                 if (!u) {
@@ -759,44 +883,107 @@ video/mp4,video/webm,video/quicktime,
             }
             return null;
         }
-        // ==========================================
+
+        function updateReviewButtonState() {
+            const isComplete = validateBeforeReview() === null && !duplicateCommentBlocked();
+            $('#reviewBtn').prop('disabled', !isComplete).toggleClass('disabled', !isComplete);
+        }
 
         function duplicateCommentBlocked() {
             let currentComment = $('#commentTextarea').val().trim();
             return isDuplicateTemplate && originalComment && currentComment === originalComment;
         }
 
+        function escapeHtml(text) {
+            return $('<div>').text(text ?? '').html();
+        }
+
+        function getPriorityReviewMeta() {
+            const value = $('input[name="priority"]:checked').val();
+            const map = {
+                high: { color: '#28a745', label: 'น้อย' },
+                medium: { color: '#ffc107', label: 'กลาง' },
+                low: { color: '#dc3545', label: 'มาก' },
+            };
+            return map[value] || { color: '#6c757d', label: '-' };
+        }
+
+        function getReviewFileNames() {
+            return myDropzone.files
+                .filter(function(file) { return !file.isAddButton; })
+                .map(function(file) { return file.name; });
+        }
+
+        function renderFormReviewSummary() {
+            const title = $('input[name="title"]').val().trim();
+            const projectName = $('#issue_project_id option:selected').text().trim();
+            const comment = $('#commentTextarea').val().trim();
+            const noUrl = $('#noUrlCheckbox').is(':checked');
+            const url = noUrl ? '' : ($('#urlInput').val() || '').trim();
+            const priority = getPriorityReviewMeta();
+            const files = getReviewFileNames();
+
+            let filesHtml = '<div class="review-field-value text-muted">-</div>';
+            if (files.length > 0) {
+                filesHtml = '<ul class="list-unstyled mb-0 review-field-value">' + files.map(function(name) {
+                    return '<li><i class="ri-file-line me-1"></i>' + escapeHtml(name) + '</li>';
+                }).join('') + '</ul>';
+            }
+
+            let urlHtml = '<span class="text-muted">ไม่มี URL สำหรับการแจ้งปัญหานี้</span>';
+            if (!noUrl && url) {
+                urlHtml = '<a href="' + escapeHtml(url) + '" target="_blank" class="text-primary fw-semibold">' + escapeHtml(url) + '</a>';
+            }
+
+            const html = `
+                <div class="review-summary">
+                    <div class="row g-3">
+                        <div class="col-lg-7">
+                            <div class="review-field-box">
+                                <div class="review-field-label"><i class="ri-edit-line me-1"></i> ปัญหา</div>
+                                <div class="review-field-value">${escapeHtml(title)}</div>
+                                <div class="review-field-label mt-3"><i class="ri-building-2-line me-1"></i> โปรเจค</div>
+                                <div class="review-field-value">${escapeHtml(projectName || '-')}</div>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="review-field-box text-center">
+                                <div class="review-field-label mb-2">ระดับความเร่งด่วน</div>
+                                <div class="d-inline-flex flex-column align-items-center">
+                                    <span class="review-priority-dot" style="background-color: ${priority.color};"></span>
+                                    <small class="text-muted mt-1">${escapeHtml(priority.label)}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="review-field-box">
+                                <div class="review-field-label"><i class="ri-file-text-line me-1"></i> รายละเอียด</div>
+                                <div class="review-field-value">${escapeHtml(comment).replace(/\n/g, '<br>')}</div>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="review-field-box">
+                                <div class="review-field-label"><i class="ri-attachment-2 me-1"></i> แนบไฟล์</div>
+                                ${filesHtml}
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="review-field-box">
+                                <div class="review-field-label"><i class="ri-links-line me-1"></i> แนบลิงก์</div>
+                                <div class="review-field-value">${urlHtml}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#issueReviewBody').html(html);
+            goToStep(2);
+        }
+
         function runLoadPreview() {
-            $.ajax({
-                url: previewUrl,
-                method: "POST",
-                data: buildSubmitPayload(),
-                dataType: "html",
-                success: function(html) {
-                    Swal.close();
-                    $('#issueReviewModalBody').html(html);
-                    const modalEl = document.getElementById('issueReviewModal');
-                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
-                    setActiveStep(2);
-                },
-                error: function(xhr) {
-                    Swal.close();
-                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                        const first = Object.values(xhr.responseJSON.errors)[0][0];
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'ข้อมูลไม่ถูกต้อง',
-                            text: first
-                        });
-                        return;
-                    }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาด',
-                        text: xhr.responseJSON?.message ?? 'ไม่สามารถโหลดรีวิวได้'
-                    });
-                }
-            });
+            Swal.close();
+            renderFormReviewSummary();
         }
 
         function runFinalSubmit() {
@@ -810,22 +997,19 @@ video/mp4,video/webm,video/quicktime,
                 data: payload,
                 success: function(res) {
                     Swal.close();
-                    if (res.redirect) {
-                        // แจ้งผลสำเร็จก่อน แล้วค่อยพาไปหน้ารายละเอียด
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'บันทึกข้อมูลสำเร็จ',
-                            text: 'รายการของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว',
-                            confirmButtonText: 'ตกลง'
-                        }).then(() => {
-                            window.location.href = res.redirect;
-                        });
+                    if (res.success) {
+                        $('#savedIssueNumber').text(res.issue_number || '-');
+                        $('#step3DetailBody').html(res.html || '');
+                        if (res.redirect) {
+                            $('#viewIssueBtn').attr('href', res.redirect);
+                        }
+                        goToStep(3);
                         return;
                     }
                     Swal.fire({
                         icon: 'error',
                         title: 'เกิดข้อผิดพลาด',
-                        text: 'ไม่ได้รับลิงก์เป้าหมายหลังส่ง'
+                        text: 'ไม่สามารถบันทึกข้อมูลได้'
                     });
                 },
                 error: function(xhr) {
@@ -880,6 +1064,10 @@ video/mp4,video/webm,video/quicktime,
             }
         });
 
+        $('#reviewBackBtn').on('click', function() {
+            goToStep(1);
+        });
+
         $('#reviewSubmitBtn').on('click', function() {
             if (duplicateCommentBlocked()) {
                 Swal.fire({
@@ -902,8 +1090,8 @@ video/mp4,video/webm,video/quicktime,
             // ถามยืนยันก่อนส่งเข้าระบบจริง
             Swal.fire({
                 icon: 'question',
-                title: 'ยืนยันการส่งเข้าระบบ?',
-                text: 'เมื่อส่งแล้วจะไม่สามารถแก้ไขข้อมูลนี้ในหน้านี้ได้อีก',
+                title: 'ยืนยันการบันทึกเข้าระบบ?',
+                text: 'เมื่อบันทึกแล้วจะไม่สามารถแก้ไขข้อมูลนี้ในหน้านี้ได้อีก',
                 showCancelButton: true,
                 confirmButtonText: 'ยืนยัน',
                 cancelButtonText: 'ยกเลิก',
@@ -914,7 +1102,7 @@ video/mp4,video/webm,video/quicktime,
                 }
 
                 Swal.fire({
-                    title: 'กำลังส่ง...',
+                    title: 'กำลังบันทึก...',
                     allowOutsideClick: false,
                     didOpen: () => Swal.showLoading()
                 });
@@ -950,16 +1138,21 @@ video/mp4,video/webm,video/quicktime,
 
         });
 
-        $('#noUrlCheckbox').change(function() {
+        $('#issueForm').on('input change', 'input, select, textarea', updateReviewButtonState);
+        $('#noUrlCheckbox').on('change', function() {
             if ($(this).is(':checked')) {
                 $('#urlInput').val('').prop('disabled', true);
             } else {
                 $('#urlInput').prop('disabled', false);
             }
+            updateReviewButtonState();
         });
 
         if ($('#noUrlCheckbox').is(':checked')) {
             $('#urlInput').val('').prop('disabled', true);
         }
+
+        updateReviewButtonState();
+        setActiveStep(1);
     </script>
 @endsection
