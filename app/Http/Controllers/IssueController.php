@@ -106,6 +106,26 @@ class IssueController extends Controller
         }
 
         $issueProjects = IssueProject::query()->orderBy('name')->get();
+
+        if ($issueProjects->isEmpty()) {
+            $businesses = Business::query()
+                ->where('business_status', 1)
+                ->where('allow_issue', 1)
+                ->orderBy('business_name')
+                ->get();
+
+            $responsibleUserId = Auth::id();
+
+            foreach ($businesses as $biz) {
+                IssueProject::create([
+                    'name' => $biz->business_name,
+                    'responsible_user_id' => $responsibleUserId,
+                ]);
+            }
+
+            $issueProjects = IssueProject::query()->orderBy('name')->get();
+        }
+
         $isIssueEmployee = false;
 
         return view('public.issue.create', compact('business', 'issue', 'issueProjects', 'isIssueEmployee', 'isDuplicateTemplate'));

@@ -413,13 +413,9 @@
                                 <span class="field-icon-label mb-2"><i class="ri-file-text-line"></i></span>
                                 <span class="fs-6 fw-semibold text-dark">รายละเอียด <span class="text-danger">*</span></span>
                                 <div class="position-relative mt-1">
-                                    <textarea name="comment" id="commentTextarea" rows="4" class="form-control"
-                                        placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
-                                    <span class="comment-attach-hint" id="commentAttachHint"
-                                        title="แนบรูปภาพ หรือวางรูปภาพด้วย Ctrl+V">
-                                        <i class="ri-image-add-line"></i>
-                                    </span>
-                                </div>
+    <textarea name="comment" id="commentTextarea" rows="4" class="form-control"
+        placeholder="อธิบายปัญหาที่พบ">{{ old('comment', $issue?->firstComment->comment ?? '') }}</textarea>
+</div>
                             </div>
                         </div>
 
@@ -546,7 +542,7 @@ video/mp4,video/webm,video/quicktime,
 .md,.html,.htm,.txt,.json,.xml,.css,.js
 `,
             addRemoveLinks: true,
-            clickable: "#browseTrigger",
+            clickable: true,
         });
 
         existingFiles.forEach(filePath => {
