@@ -8,6 +8,7 @@ use App\Http\Controllers\IssueCommentController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\IssueProjectController;
 use App\Http\Controllers\LineWebhookController;
+use App\Http\Controllers\LogController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -110,4 +111,6 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/{user}', 'destroy')->name('destroy');
         Route::post('/{user}/change-status', 'changeStatus')->name('changeStatus');
     });
+
+    Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
 });
