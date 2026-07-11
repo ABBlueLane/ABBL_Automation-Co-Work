@@ -7,6 +7,7 @@ use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
 use App\Models\LineImsSubmission;
 use App\Services\Line\LineMessagingClient;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -35,6 +36,12 @@ class LineImsFormProcessor
         $messageType = $event['message']['type'] ?? $message?->message_type ?? 'unknown';
         $messageId = $event['message']['id'] ?? $message?->message_id;
         $webhookEventId = $event['webhookEventId'] ?? $message?->webhook_event_id;
+
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            $this->notifyAlreadySubmitted($chatSource, $formState, $replyToken);
+
+            return;
+        }
 
         if ($messageId !== null) {
             $formState['last_message_id'] = $messageId;
@@ -263,14 +270,6 @@ class LineImsFormProcessor
             return;
         }
 
-        $draft = $chatSource->draftIssue;
-
-        if ($draft === null || $draft->status !== Issue::STATUS_DRAFT) {
-            $this->notifyGroup($chatSource, 'ไม่พบแบบร่างสำหรับส่งเข้าระบบ', $replyToken);
-
-            return;
-        }
-
         if ($webhookEventId !== null && $webhookEventId !== '') {
             $existingSubmission = LineImsSubmission::query()
                 ->where('webhook_event_id', $webhookEventId)
@@ -281,67 +280,143 @@ class LineImsFormProcessor
             }
         }
 
-        $audit = LineImsSubmission::query()->create([
-            'line_chat_source_id' => $chatSource->id,
-            'draft_issue_id' => $draft->id,
-            'webhook_event_id' => $webhookEventId,
-            'status' => LineImsSubmission::STATUS_PENDING,
-            'form_state' => $formState,
-        ]);
+        $submitted = null;
 
         try {
-            $this->syncDraftIssue($chatSource, $formState);
+            $submitted = DB::transaction(function () use ($chatSource, $formState, $webhookEventId) {
+                $lockedSource = LineChatSource::query()
+                    ->lockForUpdate()
+                    ->find($chatSource->id);
 
-            $submitted = $this->submissionService->submitDraft($draft->fresh(), $this->submitPayloadFromFormState($formState));
+                if ($lockedSource === null) {
+                    return null;
+                }
 
-            $submittedAt = now();
-            $formState['submitted_issue_id'] = $submitted->id;
-            $formState['submitted_at'] = $submittedAt->toIso8601String();
+                $lockedState = $lockedSource->form_state ?? [];
 
-            $chatSource->update([
-                'form_state' => $formState,
-                'draft_issue_id' => null,
-            ]);
+                if ($this->hasSubmittedInCurrentSession($lockedState)) {
+                    return 'already_submitted';
+                }
 
-            $audit->update([
-                'submitted_issue_id' => $submitted->id,
-                'status' => LineImsSubmission::STATUS_SUCCESS,
-                'submitted_at' => $submittedAt,
-                'form_state' => $formState,
-            ]);
+                $draft = $lockedSource->draftIssue;
 
-            $this->notifyIssueSubmittedToGroup($chatSource, $submitted, $replyToken);
+                if ($draft === null || $draft->status !== Issue::STATUS_DRAFT) {
+                    return null;
+                }
+
+                $audit = LineImsSubmission::query()->create([
+                    'line_chat_source_id' => $lockedSource->id,
+                    'draft_issue_id' => $draft->id,
+                    'webhook_event_id' => $webhookEventId,
+                    'status' => LineImsSubmission::STATUS_PENDING,
+                    'form_state' => $formState,
+                ]);
+
+                $this->syncDraftIssue($lockedSource, $formState);
+
+                $issue = $this->submissionService->submitDraft(
+                    $draft->fresh(),
+                    $this->submitPayloadFromFormState($formState),
+                );
+
+                $submittedAt = now();
+                $lockedState['submitted_issue_id'] = $issue->id;
+                $lockedState['submitted_at'] = $submittedAt->toIso8601String();
+
+                $lockedSource->update([
+                    'form_state' => $lockedState,
+                    'draft_issue_id' => null,
+                ]);
+
+                $audit->update([
+                    'submitted_issue_id' => $issue->id,
+                    'status' => LineImsSubmission::STATUS_SUCCESS,
+                    'submitted_at' => $submittedAt,
+                    'form_state' => $lockedState,
+                ]);
+
+                return $issue;
+            });
         } catch (ValidationException $exception) {
             $error = collect($exception->errors())->flatten()->first() ?? $exception->getMessage();
 
-            $audit->update([
-                'status' => LineImsSubmission::STATUS_FAILED,
-                'error_message' => $error,
-            ]);
+            LineImsSubmission::query()
+                ->where('line_chat_source_id', $chatSource->id)
+                ->where('webhook_event_id', $webhookEventId)
+                ->where('status', LineImsSubmission::STATUS_PENDING)
+                ->update([
+                    'status' => LineImsSubmission::STATUS_FAILED,
+                    'error_message' => $error,
+                ]);
 
             $this->messagingClient->notifyChat(
                 (string) $chatSource->source_id,
                 "ส่งไม่สำเร็จ: {$error}",
                 $replyToken,
             );
+
+            return;
         } catch (\Throwable $exception) {
             Log::error('LINE IMS submit failed.', [
                 'line_chat_source_id' => $chatSource->id,
-                'draft_issue_id' => $draft->id,
                 'message' => $exception->getMessage(),
             ]);
 
-            $audit->update([
-                'status' => LineImsSubmission::STATUS_FAILED,
-                'error_message' => $exception->getMessage(),
-            ]);
+            LineImsSubmission::query()
+                ->where('line_chat_source_id', $chatSource->id)
+                ->where('webhook_event_id', $webhookEventId)
+                ->where('status', LineImsSubmission::STATUS_PENDING)
+                ->update([
+                    'status' => LineImsSubmission::STATUS_FAILED,
+                    'error_message' => $exception->getMessage(),
+                ]);
 
             $this->messagingClient->notifyChat(
                 (string) $chatSource->source_id,
                 'ส่งไม่สำเร็จ: เกิดข้อผิดพลาดภายในระบบ',
                 $replyToken,
             );
+
+            return;
         }
+
+        if ($submitted === 'already_submitted') {
+            return;
+        }
+
+        if (! $submitted instanceof Issue) {
+            $this->notifyGroup($chatSource, 'ไม่พบแบบร่างสำหรับส่งเข้าระบบ', $replyToken);
+
+            return;
+        }
+
+        $this->notifyIssueSubmittedToGroup($chatSource, $submitted, $replyToken);
+    }
+
+    /**
+     * @param  array<string, mixed>  $formState
+     */
+    private function hasSubmittedInCurrentSession(array $formState): bool
+    {
+        return ! empty($formState['submitted_issue_id']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $formState
+     */
+    private function notifyAlreadySubmitted(LineChatSource $chatSource, array $formState, ?string $replyToken): void
+    {
+        $issue = Issue::query()->find((int) ($formState['submitted_issue_id'] ?? 0));
+
+        if ($issue === null) {
+            return;
+        }
+
+        $this->notifyGroup(
+            $chatSource,
+            $this->successMessage($issue, (string) $chatSource->business_id),
+            $replyToken,
+        );
     }
 
     private function resetForm(LineChatSource $chatSource, ?string $replyToken): void

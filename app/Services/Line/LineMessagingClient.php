@@ -9,15 +9,19 @@ use Illuminate\Support\Facades\Log;
 class LineMessagingClient
 {
     /**
-     * Send a message to a group/room via push (preferred), falling back to reply token.
+     * Reply immediately when token is still valid (sync webhook), otherwise push to the group.
      */
     public function notifyChat(string $to, string $text, ?string $replyToken = null): bool
     {
-        if ($to !== '' && $this->pushText($to, $text)) {
+        if ($replyToken !== null && $replyToken !== '' && $this->replyText($replyToken, $text)) {
             return true;
         }
 
-        return $this->replyText($replyToken, $text);
+        if ($to !== '') {
+            return $this->pushText($to, $text);
+        }
+
+        return false;
     }
 
     public function replyText(?string $replyToken, string $text): bool

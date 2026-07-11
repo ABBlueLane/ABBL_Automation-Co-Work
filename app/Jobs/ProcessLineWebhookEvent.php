@@ -10,6 +10,7 @@ use App\Services\Line\LineCommandParser;
 use App\Services\Line\LineMessagingClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Carbon;
 
 class ProcessLineWebhookEvent implements ShouldQueue
@@ -22,6 +23,25 @@ class ProcessLineWebhookEvent implements ShouldQueue
     public function __construct(public array $event)
     {
         //
+    }
+
+    /**
+     * @return array<int, object>
+     */
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping($this->overlapKey()))
+                ->releaseAfter(5)
+                ->expireAfter(60),
+        ];
+    }
+
+    private function overlapKey(): string
+    {
+        $source = $this->event['source'] ?? [];
+
+        return (string) ($source['groupId'] ?? $source['roomId'] ?? $this->event['webhookEventId'] ?? 'line-webhook');
     }
 
     public function handle(

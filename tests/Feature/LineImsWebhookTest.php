@@ -164,6 +164,68 @@ class LineImsWebhookTest extends TestCase
         $this->assertSame('หัวข้อเดิม', $source?->form_state['title']);
     }
 
+    public function test_messages_after_submit_do_not_create_duplicate_issues(): void
+    {
+        config()->set('services.line.ims.auto_submit', false);
+
+        $this->startCollecting('group-ims-dup');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dup-title',
+                    'text' => 'ปัญหาซ้ำ',
+                    'groupId' => 'group-ims-dup',
+                    'messageId' => 'message-dup-title',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dup-url',
+                    'text' => 'https://example.com/dup',
+                    'groupId' => 'group-ims-dup',
+                    'messageId' => 'message-dup-url',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dup-submit',
+                    'text' => '@ABBL Bot ส่ง',
+                    'groupId' => 'group-ims-dup',
+                    'messageId' => 'message-dup-submit',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-dup')->first();
+        $firstSubmittedId = $source?->form_state['submitted_issue_id'] ?? null;
+
+        $this->assertNotNull($firstSubmittedId);
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dup-extra',
+                    'text' => 'ข้อความหลังส่งแล้ว',
+                    'groupId' => 'group-ims-dup',
+                    'messageId' => 'message-dup-extra',
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-dup')->first();
+
+        $this->assertSame($firstSubmittedId, $source?->form_state['submitted_issue_id'] ?? null);
+        $this->assertSame(1, Issue::query()->where('title', 'ปัญหาซ้ำ')->where('status', Issue::STATUS_PENDING)->count());
+    }
+
     public function test_image_message_adds_file_to_form_state(): void
     {
         $this->startCollecting('group-ims-5');

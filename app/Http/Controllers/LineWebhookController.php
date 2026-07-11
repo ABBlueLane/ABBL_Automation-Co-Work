@@ -46,7 +46,7 @@ class LineWebhookController extends Controller
 
         foreach ($events as $event) {
             if (is_array($event)) {
-                ProcessLineWebhookEvent::dispatch($event);
+                ProcessLineWebhookEvent::dispatchSync($event);
             }
         }
 
