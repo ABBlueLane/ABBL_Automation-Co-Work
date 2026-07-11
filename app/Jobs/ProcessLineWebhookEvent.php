@@ -2,8 +2,10 @@
 
 namespace App\Jobs;
 
+use App\Models\Issue;
 use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
+use App\Services\Line\Ims\LineImsFormProcessor;
 use App\Services\Line\LineCommandParser;
 use App\Services\Line\LineMessagingClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,8 +24,11 @@ class ProcessLineWebhookEvent implements ShouldQueue
         //
     }
 
-    public function handle(LineCommandParser $parser, LineMessagingClient $messagingClient): void
-    {
+    public function handle(
+        LineCommandParser $parser,
+        LineMessagingClient $messagingClient,
+        LineImsFormProcessor $formProcessor,
+    ): void {
         $source = $this->sourcePayload();
 
         if ($source === null) {
@@ -61,19 +66,29 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 'stopped_at' => null,
             ]);
 
-            $messagingClient->replyText($this->event['replyToken'] ?? null, 'เริ่มเก็บข้อมูลในกลุ่มนี้แล้ว');
+            $formProcessor->initializeForm($chatSource->fresh());
+
+            $messagingClient->replyText(
+                $this->event['replyToken'] ?? null,
+                'เริ่มรับแจ้งปัญหาแล้ว กรุณาส่งหัวข้อปัญหา',
+            );
 
             return;
         }
 
         if ($command === LineCommandParser::STOP) {
+            $draftNotice = $this->draftStatusNotice($chatSource);
+
             $chatSource->update([
                 'is_collecting' => false,
                 'stopped_by_user_id' => $source['user_id'],
                 'stopped_at' => now(),
             ]);
 
-            $messagingClient->replyText($this->event['replyToken'] ?? null, 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว');
+            $messagingClient->replyText(
+                $this->event['replyToken'] ?? null,
+                'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว'.$draftNotice,
+            );
 
             return;
         }
@@ -82,7 +97,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
             return;
         }
 
-        LineChatMessage::query()->firstOrCreate(
+        $message = LineChatMessage::query()->firstOrCreate(
             ['webhook_event_id' => $this->webhookEventId()],
             [
                 'line_chat_source_id' => $chatSource->id,
@@ -95,6 +110,38 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 'raw_event' => $this->event,
             ],
         );
+
+        if (! $message->wasRecentlyCreated) {
+            return;
+        }
+
+        if ($this->shouldProcessImsForm($chatSource->fresh())) {
+            $formProcessor->process($chatSource->fresh(), $this->event, $message);
+        }
+    }
+
+    private function shouldProcessImsForm(LineChatSource $chatSource): bool
+    {
+        return $chatSource->form_type === null
+            || $chatSource->form_type === LineChatSource::FORM_TYPE_ISSUE_CREATE;
+    }
+
+    private function draftStatusNotice(LineChatSource $chatSource): string
+    {
+        $chatSource->loadMissing('draftIssue');
+
+        if ($chatSource->draft_issue_id === null || $chatSource->draftIssue?->status !== Issue::STATUS_DRAFT) {
+            return '';
+        }
+
+        $formState = $chatSource->form_state ?? [];
+        $title = trim((string) ($formState['title'] ?? $chatSource->draftIssue?->title ?? ''));
+
+        if ($title === '' || $title === 'แบบร่าง') {
+            return "\n(มีแบบร่างค้างอยู่ — ยังไม่มีหัวข้อ)";
+        }
+
+        return "\n(มีแบบร่างค้างอยู่: {$title})";
     }
 
     /**
