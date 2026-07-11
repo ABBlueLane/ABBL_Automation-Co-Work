@@ -315,41 +315,41 @@ LINE_IMS_AUTO_SUBMIT=true
 - [x] **1.3** อัปเดต `LineChatSource` model — relationship `draftIssue()`, `business()`, cast `form_state`, `defaultIssueCreateFormState()` (2026-07-10)
 - [x] **1.4** สร้างตาราง `line_ims_submissions` สำหรับ audit log + model `LineImsSubmission` (2026-07-10)
 
-### Phase 2 — Core Services
+### Phase 2 — Core Services ✅ (2026-07-10)
 
-- [ ] **2.1** สร้าง `IssueSubmissionService`
-    - [ ] `createOrUpdateDraft(businessId, userId, array $data): Issue`
-    - [ ] `submitDraft(Issue $issue, array $data): Issue`
-    - [ ] reuse validation จาก `issueSubmitRules()`
-- [ ] **2.2** สร้าง `IssueCreateFormMapper`
-    - [ ] `mapTextMessage(string $text, array $currentState): array`
-    - [ ] `extractUrl(string $text): ?string`
-    - [ ] `detectPriority(string $text): ?string`
-    - [ ] `detectNoUrlIntent(string $text): bool`
-- [ ] **2.3** สร้าง `IssueCreateFormCompleter`
-    - [ ] `missingFields(array $state): array`
-    - [ ] `isComplete(array $state): bool`
-- [ ] **2.4** สร้าง `LineContentDownloader`
-    - [ ] ดาวน์โหลดจาก LINE Content API
-    - [ ] เก็บไฟล์ที่ `issue/{business}/` เหมือน `IssueController::upload()`
-- [ ] **2.5** สร้าง `LineImsFormProcessor` (orchestrator)
-    - [ ] โหลด/สร้าง draft issue
-    - [ ] อัปเดต `form_state` + sync ลง `issues` / `issue_comments`
-    - [ ] เรียก submit เมื่อครบ
-    - [ ] ส่ง reply/push กลับ LINE
+- [x] **2.1** สร้าง `IssueSubmissionService`
+    - [x] `createOrUpdateDraft(businessId, userId, array $data): Issue`
+    - [x] `submitDraft(Issue $issue, array $data): Issue`
+    - [x] reuse validation จาก `issueSubmitRules()`
+- [x] **2.2** สร้าง `IssueCreateFormMapper`
+    - [x] `mapTextMessage(string $text, array $currentState): array`
+    - [x] `extractUrl(string $text): ?string`
+    - [x] `detectPriority(string $text): ?string`
+    - [x] `detectNoUrlIntent(string $text): bool`
+- [x] **2.3** สร้าง `IssueCreateFormCompleter`
+    - [x] `missingFields(array $state): array`
+    - [x] `isComplete(array $state): bool`
+- [x] **2.4** สร้าง `LineContentDownloader`
+    - [x] ดาวน์โหลดจาก LINE Content API
+    - [x] เก็บไฟล์ที่ `issue/{business}/` เหมือน `IssueController::upload()`
+- [x] **2.5** สร้าง `LineImsFormProcessor` (orchestrator)
+    - [x] โหลด/สร้าง draft issue
+    - [x] อัปเดต `form_state` + sync ลง `issues` / `issue_comments`
+    - [x] เรียก submit เมื่อครบ
+    - [x] ส่ง reply/push กลับ LINE
 
-### Phase 3 — เชื่อมกับ LINE Webhook
+### Phase 3 — เชื่อมกับ LINE Webhook ✅ (2026-07-10)
 
-- [ ] **3.1** ขยาย `LineCommandParser` (optional)
-    - [ ] คำสั่ง `ส่ง` / `submit`
-    - [ ] คำสั่ง `รีเซ็ต` / `reset`
-    - [ ] คำสั่งแบบ `เรื่อง:`, `ลิงก์:` (Phase 2)
-- [ ] **3.2** แก้ `ProcessLineWebhookEvent`
-    - [ ] เมื่อ START: ตั้ง `business_id`, `form_type`, สร้าง draft, reset `form_state`
-    - [ ] เมื่อ STOP: (optional) แจ้งสถานะ draft ค้าง
-    - [ ] หลังบันทึก message: dispatch `LineImsFormProcessor`
-- [ ] **3.3** รองรับ non-text message (image/file) ใน processor
-- [ ] **3.4** ป้องกัน process ซ้ำจาก redelivery (เช็ค `webhook_event_id` ก่อน process form)
+- [x] **3.1** ขยาย `LineCommandParser` (optional)
+    - [x] คำสั่ง `ส่ง` / `submit`
+    - [x] คำสั่ง `รีเซ็ต` / `reset`
+    - [x] คำสั่งแบบ `เรื่อง:`, `ลิงก์:` (Phase 2 — ผ่าน `IssueCreateFormMapper`)
+- [x] **3.2** แก้ `ProcessLineWebhookEvent`
+    - [x] เมื่อ START: ตั้ง `business_id`, `form_type`, สร้าง draft, reset `form_state`
+    - [x] เมื่อ STOP: (optional) แจ้งสถานะ draft ค้าง
+    - [x] หลังบันทึก message: dispatch `LineImsFormProcessor`
+- [x] **3.3** รองรับ non-text message (image/file) ใน processor
+- [x] **3.4** ป้องกัน process ซ้ำจาก redelivery (เช็ค `webhook_event_id` ก่อน process form)
 
 ### Phase 4 — ขยาย LINE Client
 

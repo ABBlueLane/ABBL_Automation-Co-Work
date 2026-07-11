@@ -23,6 +23,22 @@ class LineCommandParserTest extends TestCase
         $this->assertNull($parser->parse($this->textEvent('stop', mentionsSelf: false)));
     }
 
+    public function test_submit_and_reset_commands_require_self_mention(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertSame(LineCommandParser::SUBMIT, $parser->parse($this->textEvent('@ABBL Bot ส่ง')));
+        $this->assertSame(LineCommandParser::RESET, $parser->parse($this->textEvent('@ABBL Bot reset')));
+        $this->assertNull($parser->parse($this->textEvent('ส่ง', mentionsSelf: false)));
+    }
+
+    public function test_structured_label_is_not_treated_as_command(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertNull($parser->parse($this->textEvent('@ABBL Bot เรื่อง: ระบบล่ม')));
+    }
+
     public function test_non_text_message_is_not_a_command(): void
     {
         $parser = new LineCommandParser;
