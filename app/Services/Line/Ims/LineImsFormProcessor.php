@@ -148,7 +148,7 @@ class LineImsFormProcessor
 
     public function successMessage(Issue $issue, string $businessId): string
     {
-        $viewUrl = route('issue.view', [$businessId, $issue->id]);
+        $viewUrl = $this->issueViewUrl($businessId, $issue->id);
 
         return implode("\n", [
             'แจ้งปัญหาสำเร็จ — ระบบเปิด IMS แล้ว',
@@ -157,6 +157,40 @@ class LineImsFormProcessor
             'กรุณาตรวจสอบและรีวิวรายละเอียด:',
             $viewUrl,
         ]);
+    }
+
+    public function issueViewUrl(string $businessId, int $issueId): string
+    {
+        $baseUrl = rtrim((string) config('services.line.ims.public_base_url', config('app.url')), '/');
+
+        return "{$baseUrl}/issue/{$businessId}/view/{$issueId}";
+    }
+
+    private function notifyIssueSubmittedToGroup(LineChatSource $chatSource, Issue $issue, ?string $replyToken): void
+    {
+        $message = $this->successMessage($issue, (string) $chatSource->business_id);
+        $groupId = trim((string) $chatSource->source_id);
+
+        if ($groupId === '') {
+            Log::warning('LINE IMS notify skipped: missing group id.', [
+                'line_chat_source_id' => $chatSource->id,
+                'issue_id' => $issue->id,
+            ]);
+            $this->messagingClient->replyText($replyToken, $message);
+
+            return;
+        }
+
+        $pushed = $this->messagingClient->pushText($groupId, $message);
+
+        if (! $pushed) {
+            Log::warning('LINE IMS push failed, falling back to reply.', [
+                'line_chat_source_id' => $chatSource->id,
+                'group_id' => $groupId,
+                'issue_id' => $issue->id,
+            ]);
+            $this->messagingClient->replyText($replyToken, $message);
+        }
     }
 
     private function ensureChatSourceConfigured(LineChatSource $chatSource): LineChatSource
@@ -252,8 +286,6 @@ class LineImsFormProcessor
             }
         }
 
-        $this->messagingClient->replyText($replyToken, 'กำลังส่งเข้าระบบ...');
-
         $audit = LineImsSubmission::query()->create([
             'line_chat_source_id' => $chatSource->id,
             'draft_issue_id' => $draft->id,
@@ -283,10 +315,7 @@ class LineImsFormProcessor
                 'form_state' => $formState,
             ]);
 
-            $this->messagingClient->pushText(
-                $chatSource->source_id,
-                $this->successMessage($submitted, (string) $chatSource->business_id),
-            );
+            $this->notifyIssueSubmittedToGroup($chatSource, $submitted, $replyToken);
         } catch (ValidationException $exception) {
             $error = collect($exception->errors())->flatten()->first() ?? $exception->getMessage();
 

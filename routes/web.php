@@ -24,6 +24,9 @@ Route::controller(AuthController::class)->group(function (): void {
 Route::post('/line/webhook/{secret?}', LineWebhookController::class)
     ->name('line.webhook');
 
+Route::get('/issue/{business}/view/{id}', [IssueController::class, 'view'])
+    ->name('issue.view');
+
 Route::middleware('auth')->group(function (): void {
     Route::get('/main', function () {
         return redirect()->route('business.select');
@@ -43,7 +46,6 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/{issue}/submit', [IssueController::class, 'submitDraft'])->name('submit');
         Route::post('/upload', [IssueController::class, 'upload'])->name('upload');
         Route::get('/table', [IssueController::class, 'table'])->name('table');
-        Route::get('/view/{id}', [IssueController::class, 'view'])->name('view');
         Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store'])->name('comment.store');
         Route::post('/issue/{issue}/close', [IssueController::class, 'close'])->name('close');
         Route::get('/{issue}/duplicate', [IssueController::class, 'duplicate'])->name('duplicate');
