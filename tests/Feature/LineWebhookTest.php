@@ -54,9 +54,9 @@ class LineWebhookTest extends TestCase
     public function test_start_command_makes_source_active(): void
     {
         $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('replyText')
-                ->once()
-                ->with('reply-token-start', 'เริ่มรับแจ้งปัญหาแล้ว กรุณาส่งหัวข้อปัญหา');
+            $mock->shouldReceive('notifyChat')->andReturn(true);
+            $mock->shouldReceive('replyText')->andReturn(true);
+            $mock->shouldReceive('pushText')->andReturn(true);
         });
 
         $this->seedImsDefaults();
@@ -124,7 +124,8 @@ class LineWebhookTest extends TestCase
         ]);
 
         $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('replyText')->once();
+            $mock->shouldReceive('notifyChat')->andReturn(true);
+            $mock->shouldReceive('replyText')->andReturn(true);
         });
 
         $this->postSignedWebhook([

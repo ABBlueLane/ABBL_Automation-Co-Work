@@ -68,9 +68,10 @@ class ProcessLineWebhookEvent implements ShouldQueue
 
             $formProcessor->initializeForm($chatSource->fresh());
 
-            $messagingClient->replyText(
-                $this->event['replyToken'] ?? null,
+            $messagingClient->notifyChat(
+                $source['id'],
                 'เริ่มรับแจ้งปัญหาแล้ว กรุณาส่งหัวข้อปัญหา',
+                $this->event['replyToken'] ?? null,
             );
 
             return;
@@ -98,9 +99,10 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
             }
 
-            $messagingClient->replyText(
-                $this->event['replyToken'] ?? null,
+            $messagingClient->notifyChat(
+                $source['id'],
                 $stopMessage,
+                $this->event['replyToken'] ?? null,
             );
 
             return;

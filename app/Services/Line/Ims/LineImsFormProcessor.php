@@ -77,7 +77,7 @@ class LineImsFormProcessor
             $locationText = trim("{$label} ({$lat}, {$lng})");
             $formState['comment'] = $this->appendComment((string) ($formState['comment'] ?? ''), $locationText);
         } elseif ($messageType === 'sticker') {
-            $this->messagingClient->replyText($replyToken, 'ไม่รองรับสติกเกอร์เป็นข้อมูลแจ้งปัญหา กรุณาส่งข้อความหรือรูปภาพ');
+            $this->notifyGroup($chatSource, 'ไม่รองรับสติกเกอร์เป็นข้อมูลแจ้งปัญหา กรุณาส่งข้อความหรือรูปภาพ', $replyToken);
 
             return;
         } else {
@@ -94,7 +94,7 @@ class LineImsFormProcessor
             return;
         }
 
-        $this->replyStatus($replyToken, $formState);
+        $this->replyStatus($chatSource, $formState, $replyToken);
     }
 
     public function initializeForm(LineChatSource $chatSource): LineChatSource
@@ -169,28 +169,23 @@ class LineImsFormProcessor
     private function notifyIssueSubmittedToGroup(LineChatSource $chatSource, Issue $issue, ?string $replyToken): void
     {
         $message = $this->successMessage($issue, (string) $chatSource->business_id);
-        $groupId = trim((string) $chatSource->source_id);
+        $this->notifyGroup($chatSource, $message, $replyToken);
+    }
 
-        if ($groupId === '') {
+    private function notifyGroup(LineChatSource $chatSource, string $text, ?string $replyToken = null): void
+    {
+        $destination = trim((string) $chatSource->source_id);
+
+        if ($destination === '') {
             Log::warning('LINE IMS notify skipped: missing group id.', [
                 'line_chat_source_id' => $chatSource->id,
-                'issue_id' => $issue->id,
             ]);
-            $this->messagingClient->replyText($replyToken, $message);
+            $this->messagingClient->replyText($replyToken, $text);
 
             return;
         }
 
-        $pushed = $this->messagingClient->pushText($groupId, $message);
-
-        if (! $pushed) {
-            Log::warning('LINE IMS push failed, falling back to reply.', [
-                'line_chat_source_id' => $chatSource->id,
-                'group_id' => $groupId,
-                'issue_id' => $issue->id,
-            ]);
-            $this->messagingClient->replyText($replyToken, $message);
-        }
+        $this->messagingClient->notifyChat($destination, $text, $replyToken);
     }
 
     private function ensureChatSourceConfigured(LineChatSource $chatSource): LineChatSource
@@ -263,7 +258,7 @@ class LineImsFormProcessor
     ): void {
         if (! $this->completer->isComplete($formState)) {
             $missing = implode(', ', $formState['missing_fields'] ?? $this->completer->missingFields($formState));
-            $this->messagingClient->replyText($replyToken, "ยังส่งไม่ได้ — ข้อมูลยังไม่ครบ: {$missing}");
+            $this->notifyGroup($chatSource, "ยังส่งไม่ได้ — ข้อมูลยังไม่ครบ: {$missing}", $replyToken);
 
             return;
         }
@@ -271,7 +266,7 @@ class LineImsFormProcessor
         $draft = $chatSource->draftIssue;
 
         if ($draft === null || $draft->status !== Issue::STATUS_DRAFT) {
-            $this->messagingClient->replyText($replyToken, 'ไม่พบแบบร่างสำหรับส่งเข้าระบบ');
+            $this->notifyGroup($chatSource, 'ไม่พบแบบร่างสำหรับส่งเข้าระบบ', $replyToken);
 
             return;
         }
@@ -324,7 +319,11 @@ class LineImsFormProcessor
                 'error_message' => $error,
             ]);
 
-            $this->messagingClient->pushText($chatSource->source_id, "ส่งไม่สำเร็จ: {$error}");
+            $this->messagingClient->notifyChat(
+                (string) $chatSource->source_id,
+                "ส่งไม่สำเร็จ: {$error}",
+                $replyToken,
+            );
         } catch (\Throwable $exception) {
             Log::error('LINE IMS submit failed.', [
                 'line_chat_source_id' => $chatSource->id,
@@ -337,7 +336,11 @@ class LineImsFormProcessor
                 'error_message' => $exception->getMessage(),
             ]);
 
-            $this->messagingClient->pushText($chatSource->source_id, 'ส่งไม่สำเร็จ: เกิดข้อผิดพลาดภายในระบบ');
+            $this->messagingClient->notifyChat(
+                (string) $chatSource->source_id,
+                'ส่งไม่สำเร็จ: เกิดข้อผิดพลาดภายในระบบ',
+                $replyToken,
+            );
         }
     }
 
@@ -356,13 +359,13 @@ class LineImsFormProcessor
             'draft_issue_id' => $draft->id,
         ]);
 
-        $this->messagingClient->replyText($replyToken, 'เริ่มรับแจ้งปัญหาใหม่แล้ว กรุณาส่งหัวข้อปัญหา');
+        $this->notifyGroup($chatSource, 'เริ่มรับแจ้งปัญหาใหม่แล้ว กรุณาส่งหัวข้อปัญหา', $replyToken);
     }
 
     /**
      * @param  array<string, mixed>  $formState
      */
-    private function replyStatus(?string $replyToken, array $formState): void
+    private function replyStatus(LineChatSource $chatSource, array $formState, ?string $replyToken): void
     {
         $title = trim((string) ($formState['title'] ?? ''));
         $titleLabel = $title !== '' ? $title : '-';
@@ -375,7 +378,7 @@ class LineImsFormProcessor
             $message .= " | แนบไฟล์แล้ว ({$fileCount} ไฟล์)";
         }
 
-        $this->messagingClient->replyText($replyToken, $message);
+        $this->notifyGroup($chatSource, $message, $replyToken);
     }
 
     /**

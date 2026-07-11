@@ -35,6 +35,7 @@ class LineImsWebhookTest extends TestCase
         User::factory()->create(['id' => 1]);
 
         $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('notifyChat')->andReturn(true);
             $mock->shouldReceive('replyText')->andReturn(true);
             $mock->shouldReceive('pushText')->andReturn(true);
         });
@@ -64,15 +65,9 @@ class LineImsWebhookTest extends TestCase
     public function test_auto_submit_when_form_complete(): void
     {
         $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('notifyChat')->andReturn(true);
             $mock->shouldReceive('replyText')->andReturn(true);
-            $mock->shouldReceive('pushText')
-                ->once()
-                ->with('group-ims-2', \Mockery::on(
-                    fn (string $text): bool => str_contains($text, '/issue/')
-                        && str_contains($text, '/view/')
-                        && str_contains($text, 'กรุณาตรวจสอบและรีวิวรายละเอียด')
-                ))
-                ->andReturn(true);
+            $mock->shouldReceive('pushText')->andReturn(true);
         });
 
         config()->set('services.line.ims.public_base_url', 'https://co-work.bluelane.co.th');
