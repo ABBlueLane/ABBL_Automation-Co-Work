@@ -224,6 +224,8 @@ class LineImsWebhookTest extends TestCase
 
         $this->assertSame($firstSubmittedId, $source?->form_state['submitted_issue_id'] ?? null);
         $this->assertSame(1, Issue::query()->where('title', 'ปัญหาซ้ำ')->where('status', Issue::STATUS_PENDING)->count());
+        $this->assertSame(0, Issue::query()->where('title', 'ปัญหาซ้ำ')->where('status', Issue::STATUS_DRAFT)->count());
+        $this->assertNull($source?->draft_issue_id);
     }
 
     public function test_image_message_adds_file_to_form_state(): void
@@ -306,6 +308,126 @@ class LineImsWebhookTest extends TestCase
         $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
     }
 
+    public function test_finish_keyword_stops_collecting(): void
+    {
+        config()->set('services.line.ims.auto_submit', false);
+
+        $this->startCollecting('group-ims-finish');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-finish-title',
+                    'text' => 'ปัญหาพร้อมส่ง',
+                    'groupId' => 'group-ims-finish',
+                    'messageId' => 'message-finish-title',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-finish-url',
+                    'text' => 'https://example.com/finish',
+                    'groupId' => 'group-ims-finish',
+                    'messageId' => 'message-finish-url',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-finish-stop',
+                    'text' => '@ABBL Bot เสร็จแล้ว',
+                    'groupId' => 'group-ims-finish',
+                    'messageId' => 'message-finish-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-finish')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
+    }
+
+    public function test_decline_confirmation_does_not_start_collecting(): void
+    {
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-decline-start',
+                    'text' => '@ABBL Bot',
+                    'groupId' => 'group-ims-decline',
+                    'messageId' => 'message-decline-start',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-decline',
+                    'text' => 'ไม่สร้าง',
+                    'groupId' => 'group-ims-decline',
+                    'messageId' => 'message-decline',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-decline')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertNull($source?->draft_issue_id);
+        $this->assertFalse($source?->form_state['awaiting_ims_confirmation'] ?? false);
+    }
+
+    public function test_mention_with_problem_text_is_saved_after_confirmation(): void
+    {
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-mention-problem',
+                    'text' => '@ABBL Bot ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ',
+                    'groupId' => 'group-ims-mention-problem',
+                    'messageId' => 'message-mention-problem',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-mention-problem')->first();
+
+        $this->assertTrue($source?->form_state['awaiting_ims_confirmation'] ?? false);
+        $this->assertSame(
+            'ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ',
+            $source?->form_state['pending_initial_message'] ?? null,
+        );
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-mention-problem-confirm',
+                    'text' => 'สร้าง',
+                    'groupId' => 'group-ims-mention-problem',
+                    'messageId' => 'message-mention-problem-confirm',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-mention-problem')->first();
+
+        $this->assertTrue((bool) $source?->is_collecting);
+        $this->assertSame('ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ', $source?->form_state['title']);
+        $this->assertArrayNotHasKey('pending_initial_message', $source?->form_state ?? []);
+    }
+
     public function test_stop_command_keeps_pending_draft(): void
     {
         $this->startCollecting('group-ims-6');
@@ -351,6 +473,18 @@ class LineImsWebhookTest extends TestCase
                     'groupId' => $groupId,
                     'messageId' => "message-start-{$groupId}",
                     'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => "event-confirm-{$groupId}",
+                    'text' => 'สร้าง',
+                    'groupId' => $groupId,
+                    'messageId' => "message-confirm-{$groupId}",
+                    'mentionsSelf' => false,
                 ]),
             ],
         ])->assertOk();

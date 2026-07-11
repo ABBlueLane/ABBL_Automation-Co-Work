@@ -12,6 +12,12 @@ class LineCommandParser
 
     public const RESET = 'reset';
 
+    public const MENTION = 'mention';
+
+    public const CONFIRM_CREATE = 'confirm_create';
+
+    public const DECLINE_CREATE = 'decline_create';
+
     /**
      * @param  array<string, mixed>  $event
      */
@@ -43,6 +49,12 @@ class LineCommandParser
 
         $commandText = $this->normalizedCommandText($text);
 
+        foreach (['เสร็จสิ้น', 'เสร็จแล้ว', 'ยืนยัน'] as $command) {
+            if ($commandText === $command || str_contains($commandText, $command)) {
+                return self::STOP;
+            }
+        }
+
         if (in_array($commandText, ['ส่ง', 'submit'], true)) {
             return self::SUBMIT;
         }
@@ -51,7 +63,69 @@ class LineCommandParser
             return self::RESET;
         }
 
+        if ($this->isStructuredLabel($commandText)) {
+            return null;
+        }
+
+        return self::MENTION;
+    }
+
+    public function parseConfirmationReply(string $text): ?string
+    {
+        $normalized = mb_strtolower(trim($text));
+
+        if ($normalized === 'สร้าง') {
+            return self::CONFIRM_CREATE;
+        }
+
+        if ($normalized === 'ไม่สร้าง') {
+            return self::DECLINE_CREATE;
+        }
+
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $event
+     */
+    public function extractMessageBody(array $event): ?string
+    {
+        if (($event['type'] ?? null) !== 'message') {
+            return null;
+        }
+
+        $message = $event['message'] ?? [];
+
+        if (($message['type'] ?? null) !== 'text' || ! $this->mentionsSelf($message)) {
+            return null;
+        }
+
+        return $this->stripMentionPrefix((string) ($message['text'] ?? ''));
+    }
+
+    public function pendingInitialMessageFromBody(string $body): ?string
+    {
+        $body = trim($body);
+
+        if ($body === '') {
+            return null;
+        }
+
+        $normalized = mb_strtolower($body);
+
+        foreach (['เริ่มเก็บข้อมูล', 'start collecting', 'start'] as $command) {
+            if ($normalized === $command) {
+                return null;
+            }
+
+            if (str_starts_with($normalized, $command.' ')) {
+                $body = trim(mb_substr($body, mb_strlen($command)));
+
+                break;
+            }
+        }
+
+        return $body !== '' ? $body : null;
     }
 
     /**
@@ -93,6 +167,17 @@ class LineCommandParser
 
         foreach ($mentionees as $mentionee) {
             if (is_array($mentionee) && ($mentionee['isSelf'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isStructuredLabel(string $commandText): bool
+    {
+        foreach ($this->structuredLabels() as $label) {
+            if (preg_match('/^'.preg_quote($label, '/').'\s*[:：]/iu', $commandText)) {
                 return true;
             }
         }

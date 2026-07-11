@@ -30,18 +30,20 @@ class LineImsFormProcessor
             return;
         }
 
-        $chatSource = $this->ensureChatSourceConfigured($chatSource);
-        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
         $replyToken = $event['replyToken'] ?? $message?->reply_token;
-        $messageType = $event['message']['type'] ?? $message?->message_type ?? 'unknown';
-        $messageId = $event['message']['id'] ?? $message?->message_id;
-        $webhookEventId = $event['webhookEventId'] ?? $message?->webhook_event_id;
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
 
         if ($this->hasSubmittedInCurrentSession($formState)) {
             $this->notifyAlreadySubmitted($chatSource, $formState, $replyToken);
 
             return;
         }
+
+        $chatSource = $this->ensureChatSourceConfigured($chatSource);
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+        $messageType = $event['message']['type'] ?? $message?->message_type ?? 'unknown';
+        $messageId = $event['message']['id'] ?? $message?->message_id;
+        $webhookEventId = $event['webhookEventId'] ?? $message?->webhook_event_id;
 
         if ($messageId !== null) {
             $formState['last_message_id'] = $messageId;
@@ -109,12 +111,19 @@ class LineImsFormProcessor
         $businessId = config('services.line.ims.default_business_id');
         $formState = LineChatSource::defaultIssueCreateFormState();
 
+        $chatSource->loadMissing('draftIssue');
+        $previousDraft = $chatSource->draftIssue;
+
         $chatSource->update([
             'business_id' => $businessId,
             'form_type' => LineChatSource::FORM_TYPE_ISSUE_CREATE,
             'form_state' => $formState,
             'draft_issue_id' => null,
         ]);
+
+        if ($previousDraft !== null && $previousDraft->status === Issue::STATUS_DRAFT) {
+            $previousDraft->delete();
+        }
 
         $draft = $this->submissionService->createOrUpdateDraft(
             (string) $businessId,
@@ -136,6 +145,12 @@ class LineImsFormProcessor
     {
         if ($chatSource->form_type !== null && $chatSource->form_type !== LineChatSource::FORM_TYPE_ISSUE_CREATE) {
             return false;
+        }
+
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            return true;
         }
 
         $chatSource = $this->ensureChatSourceConfigured($chatSource);
@@ -214,11 +229,13 @@ class LineImsFormProcessor
             $chatSource->refresh();
         }
 
-        if ($chatSource->draft_issue_id === null) {
+        $formState = $chatSource->form_state ?? [];
+
+        if ($chatSource->draft_issue_id === null && ! $this->hasSubmittedInCurrentSession($formState)) {
             $draft = $this->submissionService->createOrUpdateDraft(
                 (string) $chatSource->business_id,
                 $this->systemUserId(),
-                $this->draftPayloadFromFormState($chatSource->form_state ?? []),
+                $this->draftPayloadFromFormState($formState),
             );
             $chatSource->update(['draft_issue_id' => $draft->id]);
             $chatSource->refresh();
@@ -232,6 +249,10 @@ class LineImsFormProcessor
      */
     private function syncDraftIssue(LineChatSource $chatSource, array $formState): void
     {
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            return;
+        }
+
         $draft = $chatSource->draftIssue;
 
         if ($draft === null || $draft->status !== Issue::STATUS_DRAFT) {
@@ -421,6 +442,8 @@ class LineImsFormProcessor
 
     private function resetForm(LineChatSource $chatSource, ?string $replyToken): void
     {
+        $chatSource->loadMissing('draftIssue');
+        $previousDraft = $chatSource->draftIssue;
         $formState = LineChatSource::defaultIssueCreateFormState();
 
         $draft = $this->submissionService->createOrUpdateDraft(
@@ -433,6 +456,12 @@ class LineImsFormProcessor
             'form_state' => $formState,
             'draft_issue_id' => $draft->id,
         ]);
+
+        if ($previousDraft !== null
+            && $previousDraft->id !== $draft->id
+            && $previousDraft->status === Issue::STATUS_DRAFT) {
+            $previousDraft->delete();
+        }
 
         $this->notifyGroup($chatSource, 'เริ่มรับแจ้งปัญหาใหม่แล้ว กรุณาส่งหัวข้อปัญหา', $replyToken);
     }
