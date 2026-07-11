@@ -120,6 +120,45 @@ class LineImsFormProcessor
         return $chatSource->fresh();
     }
 
+    /**
+     * Submit pending IMS draft when user stops collecting, if the form is complete.
+     *
+     * @return bool True when an issue was submitted to IMS.
+     */
+    public function finalizeOnStop(LineChatSource $chatSource, ?string $replyToken, ?string $webhookEventId): bool
+    {
+        if ($chatSource->form_type !== null && $chatSource->form_type !== LineChatSource::FORM_TYPE_ISSUE_CREATE) {
+            return false;
+        }
+
+        $chatSource = $this->ensureChatSourceConfigured($chatSource);
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+
+        if (! $this->completer->isComplete($formState)) {
+            return false;
+        }
+
+        $this->attemptSubmit($chatSource, $formState, $replyToken, $webhookEventId);
+
+        return LineImsSubmission::query()
+            ->where('webhook_event_id', $webhookEventId)
+            ->where('status', LineImsSubmission::STATUS_SUCCESS)
+            ->exists();
+    }
+
+    public function successMessage(Issue $issue, string $businessId): string
+    {
+        $viewUrl = route('issue.view', [$businessId, $issue->id]);
+
+        return implode("\n", [
+            'แจ้งปัญหาสำเร็จ — ระบบเปิด IMS แล้ว',
+            "Issue #{$issue->issue_number}",
+            '',
+            'กรุณาตรวจสอบและรีวิวรายละเอียด:',
+            $viewUrl,
+        ]);
+    }
+
     private function ensureChatSourceConfigured(LineChatSource $chatSource): LineChatSource
     {
         $businessId = $chatSource->business_id ?: config('services.line.ims.default_business_id');
@@ -244,10 +283,9 @@ class LineImsFormProcessor
                 'form_state' => $formState,
             ]);
 
-            $viewUrl = route('issue.view', [$chatSource->business_id, $submitted->id]);
             $this->messagingClient->pushText(
                 $chatSource->source_id,
-                "แจ้งปัญหาสำเร็จ\nIssue #{$submitted->issue_number}\n{$viewUrl}",
+                $this->successMessage($submitted, (string) $chatSource->business_id),
             );
         } catch (ValidationException $exception) {
             $error = collect($exception->errors())->flatten()->first() ?? $exception->getMessage();

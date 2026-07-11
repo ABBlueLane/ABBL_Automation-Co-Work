@@ -189,6 +189,52 @@ class LineImsWebhookTest extends TestCase
         );
     }
 
+    public function test_stop_command_submits_complete_form_and_keeps_draft_when_incomplete(): void
+    {
+        config()->set('services.line.ims.auto_submit', false);
+
+        $this->startCollecting('group-ims-7');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-stop-complete-title',
+                    'text' => 'ปัญหาพร้อมส่ง',
+                    'groupId' => 'group-ims-7',
+                    'messageId' => 'message-stop-complete-title',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-stop-complete-url',
+                    'text' => 'https://example.com/done',
+                    'groupId' => 'group-ims-7',
+                    'messageId' => 'message-stop-complete-url',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-stop-complete',
+                    'text' => '@ABBL Bot หยุดเก็บข้อมูล',
+                    'groupId' => 'group-ims-7',
+                    'messageId' => 'message-stop-complete',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-7')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
+    }
+
     public function test_stop_command_keeps_pending_draft(): void
     {
         $this->startCollecting('group-ims-6');
