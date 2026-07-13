@@ -32,6 +32,47 @@ class LineCommandParserTest extends TestCase
         $this->assertNull($parser->parse($this->textEvent('ส่ง', mentionsSelf: false)));
     }
 
+    public function test_finish_keywords_are_stop_commands(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertSame(LineCommandParser::STOP, $parser->parse($this->textEvent('@ABBL Bot เสร็จสิ้น')));
+        $this->assertSame(LineCommandParser::STOP, $parser->parse($this->textEvent('@ABBL Bot เสร็จแล้ว')));
+        $this->assertSame(LineCommandParser::STOP, $parser->parse($this->textEvent('@ABBL Bot ยืนยัน')));
+    }
+
+    public function test_bare_mention_is_detected(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertSame(LineCommandParser::MENTION, $parser->parse($this->textEvent('@ABBL Bot')));
+    }
+
+    public function test_confirmation_reply_parser(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertSame(LineCommandParser::CONFIRM_CREATE, $parser->parseConfirmationReply('สร้าง'));
+        $this->assertSame(LineCommandParser::DECLINE_CREATE, $parser->parseConfirmationReply('ไม่สร้าง'));
+        $this->assertNull($parser->parseConfirmationReply('hello'));
+    }
+
+    public function test_pending_initial_message_from_body(): void
+    {
+        $parser = new LineCommandParser;
+
+        $this->assertSame(
+            'ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ',
+            $parser->pendingInitialMessageFromBody('ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ'),
+        );
+        $this->assertNull($parser->pendingInitialMessageFromBody(''));
+        $this->assertNull($parser->pendingInitialMessageFromBody('เริ่มเก็บข้อมูล'));
+        $this->assertSame(
+            'ระบบล่ม',
+            $parser->pendingInitialMessageFromBody('เริ่มเก็บข้อมูล ระบบล่ม'),
+        );
+    }
+
     public function test_structured_label_is_not_treated_as_command(): void
     {
         $parser = new LineCommandParser;
