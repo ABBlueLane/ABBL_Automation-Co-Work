@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApiClientController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CriticalIssueController;
@@ -13,7 +14,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('api_clients.index');
+    return redirect()->route('dashboard');
 });
 
 Route::controller(AuthController::class)->group(function (): void {
@@ -29,6 +30,8 @@ Route::get('/issue/{business}/view/{id}', [IssueController::class, 'view'])
     ->name('issue.view');
 
 Route::middleware('auth')->group(function (): void {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/main', function () {
         return redirect()->route('business.select');
     })->name('main');
@@ -38,6 +41,9 @@ Route::middleware('auth')->group(function (): void {
     })->name('home');
 
     Route::get('/select-business', [IssueController::class, 'selectBusiness'])->name('business.select');
+
+    Route::get('/issue/table', [IssueController::class, 'adminTable'])->name('admin.issues.table');
+    Route::get('/issue', [IssueController::class, 'adminIndex'])->name('admin.issues.index');
 
     Route::prefix('issue/{business}')->name('issue.')->group(function (): void {
         Route::get('/', [IssueController::class, 'index'])->name('index');
