@@ -86,7 +86,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
 
         if ($command === LineCommandParser::STOP) {
             $chatSource->refresh();
-            $submittedOnStop = $formProcessor->finalizeOnStop(
+            $submittedIssue = $formProcessor->finalizeOnStop(
                 $chatSource,
                 $this->event['replyToken'] ?? null,
                 $this->event['webhookEventId'] ?? null,
@@ -98,19 +98,22 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 'stopped_at' => now(),
             ]);
 
-            $stopMessage = 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว';
-
-            if ($submittedOnStop) {
-                $stopMessage .= "\nระบบส่งเข้า IMS แล้ว — กรุณาตรวจสอบลิงก์ด้านบน";
+            if ($submittedIssue instanceof Issue) {
+                $messagingClient->notifyChat(
+                    $source['id'],
+                    $formProcessor->successMessage($submittedIssue, (string) $chatSource->fresh()->business_id),
+                    $this->event['replyToken'] ?? null,
+                );
             } else {
+                $stopMessage = 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว';
                 $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
-            }
 
-            $messagingClient->notifyChat(
-                $source['id'],
-                $stopMessage,
-                $this->event['replyToken'] ?? null,
-            );
+                $messagingClient->notifyChat(
+                    $source['id'],
+                    $stopMessage,
+                    $this->event['replyToken'] ?? null,
+                );
+            }
 
             return;
         }

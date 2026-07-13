@@ -97,6 +97,21 @@ class LineImsWebhookTest extends TestCase
         ])->assertOk();
 
         $source = LineChatSource::query()->where('source_id', 'group-ims-2')->first();
+        $this->assertNull($source?->form_state['submitted_issue_id'] ?? null);
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-complete-stop',
+                    'text' => '@ABBL Bot ยืนยัน',
+                    'groupId' => 'group-ims-2',
+                    'messageId' => 'message-complete-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-2')->first();
         $submittedIssueId = $source?->form_state['submitted_issue_id'] ?? null;
 
         $this->assertNotNull($submittedIssueId);
@@ -109,7 +124,7 @@ class LineImsWebhookTest extends TestCase
         $this->assertNull($source?->draft_issue_id);
     }
 
-    public function test_no_url_intent_allows_auto_submit(): void
+    public function test_no_url_intent_allows_submit_on_stop(): void
     {
         $this->startCollecting('group-ims-3');
 
@@ -138,6 +153,22 @@ class LineImsWebhookTest extends TestCase
         $source = LineChatSource::query()->where('source_id', 'group-ims-3')->first();
 
         $this->assertTrue($source?->form_state['no_url'] ?? false);
+        $this->assertNull($source?->form_state['submitted_issue_id'] ?? null);
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-no-url-stop',
+                    'text' => '@ABBL Bot เสร็จแล้ว',
+                    'groupId' => 'group-ims-3',
+                    'messageId' => 'message-no-url-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-3')->first();
+
         $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
     }
 
@@ -164,10 +195,52 @@ class LineImsWebhookTest extends TestCase
         $this->assertSame('หัวข้อเดิม', $source?->form_state['title']);
     }
 
+    public function test_redelivery_after_submit_does_not_send_duplicate_success_messages(): void
+    {
+        $this->startCollecting('group-ims-redelivery-submit');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-redelivery-submit-title',
+                    'text' => 'ปัญหา redelivery',
+                    'groupId' => 'group-ims-redelivery-submit',
+                    'messageId' => 'message-redelivery-submit-title',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-redelivery-submit-no-url',
+                    'text' => 'ไม่มี url',
+                    'groupId' => 'group-ims-redelivery-submit',
+                    'messageId' => 'message-redelivery-submit-no-url',
+                ]),
+            ],
+        ])->assertOk();
+
+        $stopPayload = [
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-redelivery-submit-stop',
+                    'text' => '@ABBL Bot ยืนยัน',
+                    'groupId' => 'group-ims-redelivery-submit',
+                    'messageId' => 'message-redelivery-submit-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ];
+
+        $this->postSignedWebhook($stopPayload)->assertOk();
+        $this->postSignedWebhook($stopPayload)->assertOk();
+
+        $this->assertSame(1, Issue::query()->where('title', 'ปัญหา redelivery')->where('status', Issue::STATUS_PENDING)->count());
+    }
+
     public function test_messages_after_submit_do_not_create_duplicate_issues(): void
     {
-        config()->set('services.line.ims.auto_submit', false);
-
         $this->startCollecting('group-ims-dup');
 
         $this->postSignedWebhook([
@@ -196,7 +269,7 @@ class LineImsWebhookTest extends TestCase
             'events' => [
                 $this->textEvent([
                     'webhookEventId' => 'event-dup-submit',
-                    'text' => '@ABBL Bot ส่ง',
+                    'text' => '@ABBL Bot ยืนยัน',
                     'groupId' => 'group-ims-dup',
                     'messageId' => 'message-dup-submit',
                     'mentionsSelf' => true,
