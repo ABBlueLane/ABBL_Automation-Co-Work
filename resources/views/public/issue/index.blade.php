@@ -1,5 +1,6 @@
 @extends('layouts.public')
 @section('title', 'OneClick | Issue Management')
+@section('navbar_container', 'container-fluid')
 
 @section('css')
     <link rel="stylesheet" href="{{ asset('css/issue-index.css') }}">
@@ -173,6 +174,17 @@
             $(document).on('click', '.issue-edit-btn', function(e) {
                 e.preventDefault();
                 const targetUrl = $(this).data('url') || '#';
+                if (targetUrl && targetUrl !== '#') {
+                    window.location.href = targetUrl;
+                }
+            });
+
+            // จัดการคลิกที่ตัวการ์ดเพื่อดูรายละเอียด
+            $(document).on('click', '.issue-card', function(e) {
+                if ($(e.target).closest('button, a').length > 0) {
+                    return;
+                }
+                const targetUrl = $(this).data('view-url');
                 if (targetUrl && targetUrl !== '#') {
                     window.location.href = targetUrl;
                 }
@@ -391,7 +403,7 @@
 
                             let cardHtml = `
                                 <div class="col-xl-4 col-md-6 col-12">
-                                    <div class="card h-100 issue-card">
+                                    <div class="card h-100 issue-card" data-view-url="${targetUrl}">
                                         <div class="issue-card-header d-flex justify-content-between align-items-start">
                                             <div class="issue-card-title-wrap">
                                                 <a href="${targetUrl}" class="issue-number-link" onclick="event.stopPropagation();">#${escapeHtml(item.issue_number || 'ABBL-IMS-000001')}</a>
@@ -411,7 +423,7 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="card-body issue-card-body d-flex flex-column justify-content-between pt-2 pb-3" style="cursor: default;">
+                                        <div class="card-body issue-card-body d-flex flex-column justify-content-between pt-2 pb-3">
                                             <div class="mb-3">
                                                 <h5 class="issue-card-title text-truncate">${escapeHtml(item.title_plain || 'ไม่มีหัวข้อ')}</h5>
                                                 <p class="issue-card-description text-truncate-2-lines">${escapeHtml(item.description || 'รายละเอียดปัญหา...')}</p>
@@ -636,6 +648,16 @@
 
 @section('style')
     <style>
+        .issue-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .issue-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
+            border-color: #cbd5e1;
+        }
+        
         .pagination .page-link {
             border-radius: 4px !important;
             box-shadow: none !important;
