@@ -80,44 +80,61 @@
         }
 
         /* ---------- Priority dots ---------- */
-        .priority-picker {
-            display: flex;
-            align-items: center;
-            gap: var(--im-space-3);
-        }
+       /* ---------- Priority segmented control ---------- */
+.priority-segmented {
+    display: inline-flex;
+    align-items: center;
+    background: #f1f2f4;
+    border-radius: 999px;
+    padding: 4px;
+    gap: 2px;
+}
 
-        .priority-dot-wrap {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-        }
+.priority-seg-wrap {
+    position: relative;
+}
 
-        .priority-dot-wrap .btn-check {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
+.priority-seg-wrap .btn-check {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
 
-        .priority-dot {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: inline-block;
-            border: 3px solid transparent;
-            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
-            transition: all .18s ease;
-        }
+.priority-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--im-text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .18s ease;
+}
 
-        .priority-dot:hover {
-            transform: scale(1.1);
-        }
+.priority-seg-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: transparent;
+    transition: background .18s ease;
+}
 
-        .btn-check:checked+.priority-dot {
-            border-color: var(--im-text);
-            box-shadow: 0 0 0 3px #fff inset, 0 0 0 5px rgba(31, 41, 55, .14);
-            transform: scale(1.06);
-        }
+.priority-seg:hover {
+    color: var(--im-text);
+}
+
+.btn-check:checked + .priority-seg {
+    background: var(--seg-color);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+}
+
+.btn-check:checked + .priority-seg .priority-seg-dot {
+    background: #fff;
+}
 
         /* ---------- Field icon labels --- */
         .field-icon-label {
@@ -453,23 +470,32 @@
                             </div>
                         </div>
                         <div class="col-lg-5">
-                            <div class="field-box d-flex flex-column align-items-center justify-content-center text-center">
-                                <small class="text-muted mb-2">ระดับความเร่งด่วน</small>
-                                <div class="priority-picker">
-                                    <i class="ri-alarm-warning-line fs-3 text-muted"></i>
-                                    @php
-                                        $priorityColors = [
-                                            \App\Models\Issue::PRIORITY_HIGH ?? 'high' => '#28a745',
-                                            \App\Models\Issue::PRIORITY_MEDIUM ?? 'medium' => '#ffc107',
-                                            \App\Models\Issue::PRIORITY_LOW ?? 'low' => '#dc3545',
-                                        ];
-                                        $priorityCaptionsByColor = [
-                                            '#dc3545' => 'มาก',
-                                            '#ffc107' => 'กลาง',
-                                            '#28a745' => 'น้อย',
-                                        ];
-                                        $selectedPriority = (string) old('priority', $issue?->priority ?? \App\Models\Issue::PRIORITY_MEDIUM);
-                                    @endphp
+    <div class="field-box d-flex flex-column align-items-center justify-content-center text-center">
+        <small class="text-muted text-uppercase fw-semibold mb-2" style="letter-spacing: 0.04em;">ระดับความเร่งด่วน</small>
+        @php
+            $priorityStyles = [
+                \App\Models\Issue::PRIORITY_HIGH ?? 'high' => ['label' => 'มาก', 'color' => '#b91c1c'],
+                \App\Models\Issue::PRIORITY_MEDIUM ?? 'medium' => ['label' => 'กลาง', 'color' => '#f59e0b'],
+                \App\Models\Issue::PRIORITY_LOW ?? 'low' => ['label' => 'น้อย', 'color' => '#16a34a'],
+            ];
+            $selectedPriority = (string) old('priority', $issue?->priority ?? \App\Models\Issue::PRIORITY_MEDIUM);
+        @endphp
+        <div class="priority-segmented" id="prioritySegmented">
+            @foreach (\App\Models\Issue::getPriorityOptions() as $value => $label)
+                @php $meta = $priorityStyles[$value] ?? ['label' => $label, 'color' => '#6c757d']; @endphp
+                <span class="priority-seg-wrap">
+                    <input class="btn-check" type="radio" name="priority" id="priority_{{ $value }}"
+                        value="{{ $value }}" @checked($selectedPriority === (string) $value)>
+                    <label class="priority-seg" for="priority_{{ $value }}"
+                        style="--seg-color: {{ $meta['color'] }};">
+                        <span class="priority-seg-dot"></span>
+                        {{ $meta['label'] }}
+                    </label>
+                </span>
+            @endforeach
+        </div>
+    </div>
+</div>
                                     @foreach (\App\Models\Issue::getPriorityOptions() as $value => $label)
                                         <span class="priority-dot-wrap d-flex flex-column align-items-center">
                                             <input class="btn-check" type="radio" name="priority" id="priority_{{ $value }}"
@@ -899,14 +925,14 @@ video/mp4,video/webm,video/quicktime,
         }
 
         function getPriorityReviewMeta() {
-            const value = $('input[name="priority"]:checked').val();
-            const map = {
-                high: { color: '#28a745', label: 'น้อย' },
-                medium: { color: '#ffc107', label: 'กลาง' },
-                low: { color: '#dc3545', label: 'มาก' },
-            };
-            return map[value] || { color: '#6c757d', label: '-' };
-        }
+    const value = $('input[name="priority"]:checked').val();
+    const map = {
+        high: { color: '#b91c1c', label: 'มาก' },
+        medium: { color: '#f59e0b', label: 'กลาง' },
+        low: { color: '#16a34a', label: 'น้อย' },
+    };
+    return map[value] || { color: '#6c757d', label: '-' };
+}
 
         function getReviewFileNames() {
             return myDropzone.files
