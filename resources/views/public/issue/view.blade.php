@@ -1,6 +1,91 @@
 @extends('layouts.public')
 
 @section('content')
+    <style>
+        .btn-copy-link-icon {
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            font-size: 1.25rem;
+            cursor: pointer;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .btn-copy-link-icon:hover {
+            color: #4f46e5;
+            transform: scale(1.1);
+        }
+        .btn-copy-link-icon:focus {
+            outline: none;
+        }
+        .status-timeline-wrap {
+            margin-top: 4px;
+        }
+        .status-timeline {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding: 0 4px;
+        }
+        .status-timeline::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            height: 3px;
+            background: #e5e7eb;
+            z-index: 0;
+        }
+        .status-timeline .st-fill {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            height: 3px;
+            background: #4f46e5;
+            z-index: 1;
+            transition: width 0.3s ease;
+        }
+        .status-timeline .st-dot-wrap {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .status-timeline .st-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+        .status-timeline .st-dot.done {
+            background: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .status-timeline .st-dot.current {
+            background: #dc3545;
+            border-color: #dc3545;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+        }
+        .status-timeline .st-label {
+            margin-top: 8px;
+            font-size: 0.72rem;
+            color: #9ca3af;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .status-timeline .st-dot-wrap:first-child { align-items: flex-start; }
+        .status-timeline .st-dot-wrap:last-child { align-items: flex-end; }
+    </style>
     <div class="container py-4">
 
         <div class="row">
@@ -77,25 +162,57 @@
                                     $issueViewUrl = route('issue.view', [$business, $issue->id]);
                                 @endphp
                                 <h3 class="fw-bold mb-1 text-dark">
-                                    <i class="ri-bug-line me-2 text-primary"></i>{{ $issue->title }}<button
-                                        type="button"
-                                        class="btn btn-link text-primary p-0 border-0 ms-2 lh-1 align-middle"
-                                        title="คัดลอกลิงก์" aria-label="คัดลอกลิงก์"
-                                        onclick="copyText('{{ $issueViewUrl }}');">
-                                        <i class="ri-links-line fs-4"></i>
-                                    </button>
-                                </h3>
+    <i class="ri-bug-line me-2 text-primary"></i>Issue #{{ $issue->issue_number }}<button
+        type="button"
+        class="btn-copy-link-icon ms-2 align-middle"
+        title="คัดลอกลิงก์" aria-label="คัดลอกลิงก์"
+        onclick="copyText('{{ $issueViewUrl }}');">
+        <i class="ri-links-line"></i>
+    </button>
+</h3>
 
-                                <div class="text-muted small">
-                                    Issue #{{ $issue->issue_number }}
-                                </div>
+<div class="text-muted small">
+    {{ $issue->title }}
+</div>
                                 {{-- STATUS --}}
                                 <div>
                                     <div class="mt-1">
+                                        <span class="text-muted small me-1">สถานะ:</span>
                                         <span class="badge {{ $statusMeta['class'] }}">
                                             {{ $statusMeta['label'] }}
                                         </span>
                                     </div>
+
+                                    @if ($issue->status !== \App\Models\Issue::STATUS_DRAFT)
+                                        @php
+                                            $statusSteps = [
+                                                \App\Models\Issue::STATUS_PENDING => 'รอรีวิว',
+                                                \App\Models\Issue::STATUS_IN_PROGRESS => 'กำลังดำเนินการ',
+                                                \App\Models\Issue::STATUS_CUSTOMER_REPLIED => 'รอลูกค้าตอบกลับ',
+                                                \App\Models\Issue::STATUS_DONE => 'ปิดเคสแล้ว',
+                                            ];
+                                            $stepKeys = array_keys($statusSteps);
+                                            $currentIndex = array_search($issue->status, $stepKeys);
+                                            $currentIndex = $currentIndex === false ? 0 : $currentIndex;
+                                            $totalSteps = count($stepKeys);
+                                            $fillPercent = $totalSteps > 1 ? ($currentIndex / ($totalSteps - 1)) * 100 : 0;
+                                        @endphp
+                                        <div class="status-timeline-wrap" style="max-width: 480px;">
+                                            <div class="status-timeline">
+                                                <div class="st-fill" style="width: {{ $fillPercent }}%;"></div>
+                                                @foreach ($statusSteps as $key => $label)
+                                                    @php
+                                                        $idx = $loop->index;
+                                                        $dotClass = $idx < $currentIndex ? 'done' : ($idx === $currentIndex ? 'current' : '');
+                                                    @endphp
+                                                    <div class="st-dot-wrap">
+                                                        <div class="st-dot {{ $dotClass }}"></div>
+                                                        <div class="st-label">{{ $label }}</div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
 
