@@ -30,18 +30,18 @@ class LineImsFormProcessor
             return;
         }
 
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            return;
+        }
+
         $chatSource = $this->ensureChatSourceConfigured($chatSource);
         $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
         $replyToken = $event['replyToken'] ?? $message?->reply_token;
         $messageType = $event['message']['type'] ?? $message?->message_type ?? 'unknown';
         $messageId = $event['message']['id'] ?? $message?->message_id;
         $webhookEventId = $event['webhookEventId'] ?? $message?->webhook_event_id;
-
-        if ($this->hasSubmittedInCurrentSession($formState)) {
-            $this->notifyAlreadySubmitted($chatSource, $formState, $replyToken);
-
-            return;
-        }
 
         if ($messageId !== null) {
             $formState['last_message_id'] = $messageId;
@@ -58,9 +58,11 @@ class LineImsFormProcessor
             }
 
             if ($mapped['action'] === IssueCreateFormMapper::ACTION_SUBMIT) {
-                $formState = $this->mergeFormState($formState, $mapped['updates']);
-                $this->persistFormState($chatSource, $formState);
-                $this->attemptSubmit($chatSource, $formState, $replyToken, $webhookEventId, force: true);
+                $this->notifyGroup(
+                    $chatSource,
+                    'กรุณา @OA แล้วพิมพ์ ยืนยัน เพื่อส่งเข้าระบบ',
+                    $replyToken,
+                );
 
                 return;
             }
@@ -94,13 +96,6 @@ class LineImsFormProcessor
         $formState = $this->completer->applyMissingFields($formState);
         $chatSource = $this->persistFormState($chatSource, $formState);
         $this->syncDraftIssue($chatSource, $formState);
-
-        if ($this->completer->isComplete($formState) && $this->shouldAutoSubmit()) {
-            $this->attemptSubmit($chatSource, $formState, $replyToken, $webhookEventId);
-
-            return;
-        }
-
         $this->replyStatus($chatSource, $formState, $replyToken);
     }
 
@@ -129,28 +124,59 @@ class LineImsFormProcessor
 
     /**
      * Submit pending IMS draft when user stops collecting, if the form is complete.
-     *
-     * @return bool True when an issue was submitted to IMS.
      */
-    public function finalizeOnStop(LineChatSource $chatSource, ?string $replyToken, ?string $webhookEventId): bool
+    public function finalizeOnStop(LineChatSource $chatSource, ?string $replyToken, ?string $webhookEventId): ?Issue
     {
         if ($chatSource->form_type !== null && $chatSource->form_type !== LineChatSource::FORM_TYPE_ISSUE_CREATE) {
-            return false;
+            return null;
+        }
+
+        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            $issueId = (int) ($formState['submitted_issue_id'] ?? 0);
+
+            return $issueId > 0 ? Issue::query()->find($issueId) : null;
         }
 
         $chatSource = $this->ensureChatSourceConfigured($chatSource);
-        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+        $formState = $this->prepareFormStateForStopSubmit(
+            $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState(),
+        );
 
         if (! $this->completer->isComplete($formState)) {
-            return false;
+            return null;
         }
 
-        $this->attemptSubmit($chatSource, $formState, $replyToken, $webhookEventId);
+        $chatSource->update(['form_state' => $formState]);
+        $this->syncDraftIssue($chatSource->fresh(), $formState);
 
-        return LineImsSubmission::query()
-            ->where('webhook_event_id', $webhookEventId)
-            ->where('status', LineImsSubmission::STATUS_SUCCESS)
-            ->exists();
+        return $this->attemptSubmit($chatSource->fresh(), $formState, $replyToken, $webhookEventId, notifyOnSuccess: true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $formState
+     * @return array<string, mixed>
+     */
+    private function prepareFormStateForStopSubmit(array $formState): array
+    {
+        $title = trim((string) ($formState['title'] ?? ''));
+        $comment = trim((string) ($formState['comment'] ?? ''));
+
+        if (in_array(mb_strtolower($title), ['สร้าง', 'ไม่สร้าง'], true) && $comment !== '') {
+            $lines = preg_split("/\r\n|\n|\r/", $comment, 2) ?: [$comment];
+            $formState['title'] = mb_substr(trim((string) ($lines[0] ?? $comment)), 0, 255);
+            $formState['comment'] = trim((string) ($lines[1] ?? ''));
+        }
+
+        $missing = $this->completer->missingFields($formState);
+
+        if ($missing === ['url_or_no_url']) {
+            $formState['no_url'] = true;
+            $formState['url'] = null;
+        }
+
+        return $this->completer->applyMissingFields($formState);
     }
 
     public function successMessage(Issue $issue, string $businessId): string
@@ -214,7 +240,7 @@ class LineImsFormProcessor
             $chatSource->refresh();
         }
 
-        if ($chatSource->draft_issue_id === null) {
+        if ($chatSource->draft_issue_id === null && ! $this->hasSubmittedInCurrentSession($chatSource->form_state ?? [])) {
             $draft = $this->submissionService->createOrUpdateDraft(
                 (string) $chatSource->business_id,
                 $this->systemUserId(),
@@ -232,6 +258,10 @@ class LineImsFormProcessor
      */
     private function syncDraftIssue(LineChatSource $chatSource, array $formState): void
     {
+        if ($this->hasSubmittedInCurrentSession($formState)) {
+            return;
+        }
+
         $draft = $chatSource->draftIssue;
 
         if ($draft === null || $draft->status !== Issue::STATUS_DRAFT) {
@@ -261,13 +291,13 @@ class LineImsFormProcessor
         array $formState,
         ?string $replyToken,
         ?string $webhookEventId,
-        bool $force = false,
-    ): void {
+        bool $notifyOnSuccess = false,
+    ): ?Issue {
         if (! $this->completer->isComplete($formState)) {
             $missing = implode(', ', $formState['missing_fields'] ?? $this->completer->missingFields($formState));
             $this->notifyGroup($chatSource, "ยังส่งไม่ได้ — ข้อมูลยังไม่ครบ: {$missing}", $replyToken);
 
-            return;
+            return null;
         }
 
         if ($webhookEventId !== null && $webhookEventId !== '') {
@@ -276,7 +306,7 @@ class LineImsFormProcessor
                 ->exists();
 
             if ($existingSubmission) {
-                return;
+                return null;
             }
         }
 
@@ -355,7 +385,7 @@ class LineImsFormProcessor
                 $replyToken,
             );
 
-            return;
+            return null;
         } catch (\Throwable $exception) {
             Log::error('LINE IMS submit failed.', [
                 'line_chat_source_id' => $chatSource->id,
@@ -377,20 +407,26 @@ class LineImsFormProcessor
                 $replyToken,
             );
 
-            return;
+            return null;
         }
 
         if ($submitted === 'already_submitted') {
-            return;
+            $issueId = (int) (($chatSource->fresh()->form_state ?? [])['submitted_issue_id'] ?? 0);
+
+            return $issueId > 0 ? Issue::query()->find($issueId) : null;
         }
 
         if (! $submitted instanceof Issue) {
             $this->notifyGroup($chatSource, 'ไม่พบแบบร่างสำหรับส่งเข้าระบบ', $replyToken);
 
-            return;
+            return null;
         }
 
-        $this->notifyIssueSubmittedToGroup($chatSource, $submitted, $replyToken);
+        if ($notifyOnSuccess) {
+            $this->notifyIssueSubmittedToGroup($chatSource, $submitted, $replyToken);
+        }
+
+        return $submitted;
     }
 
     /**
@@ -399,24 +435,6 @@ class LineImsFormProcessor
     private function hasSubmittedInCurrentSession(array $formState): bool
     {
         return ! empty($formState['submitted_issue_id']);
-    }
-
-    /**
-     * @param  array<string, mixed>  $formState
-     */
-    private function notifyAlreadySubmitted(LineChatSource $chatSource, array $formState, ?string $replyToken): void
-    {
-        $issue = Issue::query()->find((int) ($formState['submitted_issue_id'] ?? 0));
-
-        if ($issue === null) {
-            return;
-        }
-
-        $this->notifyGroup(
-            $chatSource,
-            $this->successMessage($issue, (string) $chatSource->business_id),
-            $replyToken,
-        );
     }
 
     private function resetForm(LineChatSource $chatSource, ?string $replyToken): void
@@ -442,18 +460,7 @@ class LineImsFormProcessor
      */
     private function replyStatus(LineChatSource $chatSource, array $formState, ?string $replyToken): void
     {
-        $title = trim((string) ($formState['title'] ?? ''));
-        $titleLabel = $title !== '' ? $title : '-';
-        $missing = implode(', ', $formState['missing_fields'] ?? []);
-        $fileCount = count((array) ($formState['files'] ?? []));
-
-        $message = "บันทึกแล้ว — เรื่อง: {$titleLabel} | ยังขาด: {$missing}";
-
-        if ($fileCount > 0) {
-            $message .= " | แนบไฟล์แล้ว ({$fileCount} ไฟล์)";
-        }
-
-        $this->notifyGroup($chatSource, $message, $replyToken);
+        $this->notifyGroup($chatSource, 'บันทึกข้อความล่าสุดแล้ว', $replyToken);
     }
 
     /**
@@ -526,11 +533,6 @@ class LineImsFormProcessor
         }
 
         return $existing."\n".$addition;
-    }
-
-    private function shouldAutoSubmit(): bool
-    {
-        return filter_var(config('services.line.ims.auto_submit'), FILTER_VALIDATE_BOOL);
     }
 
     private function systemUserId(): int
