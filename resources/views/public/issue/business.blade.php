@@ -17,7 +17,7 @@
                     <div class="card-body pt-4">
                         @forelse ($businesses as $business)
                             <div class="d-grid mb-3">
-                                <a href="{{ route('issue.index', $business->id) }}"
+                                <a href="{{ route('issue.index', ['business_id' => $business->id]) }}"
                                     class="btn btn-primary btn-lg d-flex align-items-center justify-content-center">
                                     <i class="ri-customer-service-2-line me-2"></i>
                                     แจ้งปัญหา {{ $business->business_name }}

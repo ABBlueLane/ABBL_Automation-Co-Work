@@ -11,6 +11,7 @@ use App\Http\Controllers\IssueProjectController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\UserController;
+use App\Models\Issue;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,8 +27,12 @@ Route::controller(AuthController::class)->group(function (): void {
 Route::post('/line/webhook/{secret?}', LineWebhookController::class)
     ->name('line.webhook');
 
-Route::get('/issue/{business}/view/{id}', [IssueController::class, 'view'])
+Route::get('/issue/view/{id}', [IssueController::class, 'view'])
     ->name('issue.view');
+
+Route::get('/issue/{business}/view/{id}', function (string $business, int $id) {
+    return redirect()->route('issue.view', ['id' => $id], 301);
+})->whereUuid('business');
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
@@ -44,20 +49,37 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/issue/table', [IssueController::class, 'adminTable'])->name('admin.issues.table');
     Route::get('/issue', [IssueController::class, 'adminIndex'])->name('admin.issues.index');
+    Route::redirect('/admin/issues/table', '/issue/table', 301);
+    Route::redirect('/admin/issues', '/issue', 301);
 
-    Route::prefix('issue/{business}')->name('issue.')->group(function (): void {
-        Route::get('/', [IssueController::class, 'index'])->name('index');
+    Route::prefix('issue')->name('issue.')->group(function (): void {
+        Route::get('/my/table', [IssueController::class, 'table'])->name('table');
+        Route::get('/my', [IssueController::class, 'index'])->name('index');
         Route::get('/create', [IssueController::class, 'create'])->name('create');
         Route::post('/draft', [IssueController::class, 'saveDraft'])->name('draft.save');
         Route::post('/store-submit', [IssueController::class, 'storeAndSubmit'])->name('store.submit');
         Route::post('/{issue}/submit', [IssueController::class, 'submitDraft'])->name('submit');
         Route::post('/upload', [IssueController::class, 'upload'])->name('upload');
-        Route::get('/table', [IssueController::class, 'table'])->name('table');
-        Route::get('/issue/{issue}/comments', [IssueCommentController::class, 'index'])->name('comments.index');
-        Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store'])->name('comment.store');
-        Route::post('/issue/{issue}/close', [IssueController::class, 'close'])->name('close');
+        Route::get('/{issue}/comments', [IssueCommentController::class, 'index'])->name('comments.index');
+        Route::post('/{issue}/comment', [IssueCommentController::class, 'store'])->name('comment.store');
+        Route::post('/{issue}/close', [IssueController::class, 'close'])->name('close');
         Route::get('/{issue}/duplicate', [IssueController::class, 'duplicate'])->name('duplicate');
         Route::post('/preview', [IssueController::class, 'preview'])->name('preview');
+    });
+
+    Route::prefix('issue/{business}')->whereUuid('business')->group(function (): void {
+        Route::get('/', fn (string $business) => redirect()->route('issue.index', array_merge(request()->query(), ['business_id' => $business]), 301));
+        Route::get('/create', fn () => redirect()->route('issue.create', request()->query(), 301));
+        Route::get('/table', fn () => redirect()->route('issue.table', request()->query(), 301));
+        Route::get('/{issue}/duplicate', fn (string $business, Issue $issue) => redirect()->route('issue.duplicate', $issue, 301));
+        Route::post('/draft', [IssueController::class, 'saveDraft']);
+        Route::post('/store-submit', [IssueController::class, 'storeAndSubmit']);
+        Route::post('/{issue}/submit', [IssueController::class, 'submitDraft']);
+        Route::post('/upload', [IssueController::class, 'upload']);
+        Route::get('/issue/{issue}/comments', [IssueCommentController::class, 'index']);
+        Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store']);
+        Route::post('/issue/{issue}/close', [IssueController::class, 'close']);
+        Route::post('/preview', [IssueController::class, 'preview']);
     });
 
     Route::prefix('office/{business}')->name('office.')->group(function (): void {

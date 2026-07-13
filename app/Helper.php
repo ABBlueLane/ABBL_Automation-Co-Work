@@ -16,6 +16,41 @@ if (! function_exists('userMayAccessOfficeBusiness')) {
     }
 }
 
+if (! function_exists('issueBusinessId')) {
+    function issueBusinessId(): string
+    {
+        $request = request();
+
+        if ($request && $request->filled('business_id') && Auth::check()) {
+            $businessId = (string) $request->input('business_id');
+            if (Business::whereKey($businessId)->exists()) {
+                session(['mainBusinessID' => $businessId]);
+
+                return $businessId;
+            }
+        }
+
+        if ($request) {
+            $routeBusiness = $request->route('business');
+            if ($routeBusiness !== null && $routeBusiness !== '') {
+                return (string) $routeBusiness;
+            }
+        }
+
+        $sessionId = session('mainBusinessID');
+        if ($sessionId !== null && $sessionId !== '') {
+            return (string) $sessionId;
+        }
+
+        $default = trim((string) config('services.line.ims.default_business_id'));
+        if ($default !== '' && Business::whereKey($default)->exists()) {
+            return $default;
+        }
+
+        return (string) Business::query()->value('id');
+    }
+}
+
 if (! function_exists('officeBusinessId')) {
     function officeBusinessId(): ?string
     {

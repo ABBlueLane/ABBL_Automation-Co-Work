@@ -28,19 +28,20 @@ class IssueController extends Controller
         return view('public.issue.business', compact('businesses'));
     }
 
-    public function index(string $business)
+    public function index()
     {
-        $business = Business::findOrFail($business);
+        $business = Business::findOrFail(issueBusinessId());
 
         return view('public.issue.index', compact('business'));
     }
 
-    public function view(string $business, int $id)
+    public function view(int $id)
     {
         $issue = Issue::where('id', $id)
-            ->where('business_id', $business)
             ->with(['firstComment', 'creator', 'assignee'])
             ->firstOrFail();
+
+        $business = $issue->business_id;
 
         if ($issue->status === Issue::STATUS_DRAFT && $issue->created_by !== Auth::id()) {
             abort(403);
@@ -55,8 +56,9 @@ class IssueController extends Controller
         return view('public.issue.view', compact('issue', 'comments', 'business'));
     }
 
-    public function table(Request $request, Business $business)
+    public function table(Request $request)
     {
+        $business = Business::findOrFail(issueBusinessId());
         $query = Issue::where('business_id', $business->id)
                       ->withCount('comments')
                       ->with(['comments' => function ($commentsQuery) {
@@ -108,10 +110,10 @@ class IssueController extends Controller
                 'description' => $issue->description,
                 'status' => $issue->status,
                 'priority' => $issue->priority,
-                'view_url' => route('issue.view', [$business->id, $issue->id]),
+                'view_url' => route('issue.view', $issue->id),
                 'edit_url' => $isEditableDraft
-                    ? route('issue.create', [$business->id, 'draft' => $issue->id])
-                    : route('issue.view', [$business->id, $issue->id]),
+                    ? route('issue.create', ['draft' => $issue->id])
+                    : route('issue.view', $issue->id),
                 'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
                 'comments_count' => (int)$issue->comments_count,
                 'latest_comment' => $latestComment?->comment,
@@ -128,8 +130,9 @@ class IssueController extends Controller
         ]);
 }
 
-    public function create(Request $request, string $business)
+    public function create(Request $request)
     {
+        $business = issueBusinessId();
         $issue = null;
         $isDuplicateTemplate = false;
 
@@ -170,8 +173,9 @@ class IssueController extends Controller
         return view('public.issue.create', compact('business', 'issue', 'issueProjects', 'isIssueEmployee', 'isDuplicateTemplate'));
     }
 
-    public function saveDraft(Request $request, string $business): JsonResponse
+    public function saveDraft(Request $request, ?string $business = null): JsonResponse
     {
+        $business = $this->resolveIssueBusiness($business);
         Business::findOrFail($business);
 
         $request->validate([
@@ -252,12 +256,13 @@ class IssueController extends Controller
         return response()->json([
             'success' => true,
             'issue_id' => $issue->id,
-            'redirect_view' => route('issue.view', [$business, $issue->id]),
+            'redirect_view' => route('issue.view', $issue->id),
         ]);
     }
 
-    public function storeAndSubmit(Request $request, string $business): JsonResponse
+    public function storeAndSubmit(Request $request, ?string $business = null): JsonResponse
     {
+        $business = $this->resolveIssueBusiness($business);
         Business::findOrFail($business);
         $this->mergeSubmitUrlEmptyToNull($request);
         $request->validate($this->issueSubmitRules());
@@ -293,7 +298,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', [$business, $issue->id]),
+            'redirect' => route('issue.view', $issue->id),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
@@ -305,8 +310,9 @@ class IssueController extends Controller
         ]);
     }
 
-    public function submitDraft(Request $request, string $business, Issue $issue): JsonResponse
+    public function submitDraft(Request $request, Issue $issue, ?string $business = null): JsonResponse
     {
+        $business = $this->resolveIssueBusiness($business);
         if ((string) $issue->business_id !== (string) $business) {
             abort(404);
         }
@@ -367,7 +373,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', [$business, $issue->id]),
+            'redirect' => route('issue.view', $issue->id),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
@@ -379,8 +385,9 @@ class IssueController extends Controller
         ]);
     }
 
-    public function upload(Request $request, string $business): JsonResponse
+    public function upload(Request $request, ?string $business = null): JsonResponse
     {
+        $business = $this->resolveIssueBusiness($business);
         Business::findOrFail($business);
 
         $request->validate([
@@ -407,8 +414,9 @@ class IssueController extends Controller
         return $this->upload($request, $businessId);
     }
 
-    public function close(string $business, Issue $issue): JsonResponse
+    public function close(Issue $issue, ?string $business = null): JsonResponse
     {
+        $business = $this->resolveIssueBusiness($business);
         if ((string) $issue->business_id !== (string) $business || $issue->created_by !== Auth::id()) {
             abort(403);
         }
@@ -432,17 +440,19 @@ class IssueController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function duplicate(string $business, Issue $issue)
+    public function duplicate(Issue $issue, ?string $business = null)
     {
+        $business = $this->resolveIssueBusiness($business);
         if ((string) $issue->business_id !== (string) $business) {
             abort(403);
         }
 
-        return redirect(route('issue.create', [$business, 'duplicate' => $issue->id]));
+        return redirect(route('issue.create', ['duplicate' => $issue->id]));
     }
 
-    public function preview(Request $request, string $business)
+    public function preview(Request $request, ?string $business = null)
     {
+        $business = $this->resolveIssueBusiness($business);
         Business::findOrFail($business);
         $this->mergeSubmitUrlEmptyToNull($request);
 
@@ -495,13 +505,13 @@ class IssueController extends Controller
 
     public function adminTable(Request $request): JsonResponse
     {
-        $query = Issue::with(['business', 'assignee', 'issueProject'])
-            ->where('status', '!=', Issue::STATUS_DRAFT)
-            ->addSelect([
-                'last_comment_created_at' => IssueComment::query()
-                    ->selectRaw('MAX(created_at)')
-                    ->whereColumn('issue_id', 'issues.id'),
-            ]);
+        $query = Issue::query()
+            ->with(['business', 'assignee', 'issueProject', 'firstComment'])
+            ->withCount('comments')
+            ->with(['comments' => function ($commentsQuery) {
+                $commentsQuery->with('user')->latest()->limit(1);
+            }])
+            ->where('status', '!=', Issue::STATUS_DRAFT);
 
         if ($request->filled('business_id')) {
             $query->where('business_id', $request->input('business_id'));
@@ -509,35 +519,21 @@ class IssueController extends Controller
 
         $this->applyIssueFilters($query, $request);
 
-        $recordsTotal = (clone $query)->count();
-        $rows = $query->skip((int) $request->input('start', 0))
+        $recordsFiltered = (clone $query)->count();
+        $rows = $query->orderByDesc('created_at')
+            ->skip((int) $request->input('start', 0))
             ->take((int) $request->input('length', 100))
             ->get();
 
         $data = [];
-        foreach ($rows as $i => $issue) {
-            $viewUrl = route('office.issue.view', ['business' => $issue->business_id, 'id' => $issue->id]);
-            $data[] = [
-                'DT_RowIndex' => (int) $request->input('start', 0) + $i + 1,
-                'issue_number' => '<a href="'.$viewUrl.'" class="text-primary">'.e($issue->issue_number).'</a>',
-                'business_html' => $issue->business?->business_name ? e($issue->business->business_name) : '<span class="text-muted">-</span>',
-                'issue_project_html' => $issue->issueProject?->name ? e($issue->issueProject->name) : '<span class="text-muted">-</span>',
-                'title_html' => '<a href="'.$viewUrl.'" class="text-primary">'.e($issue->title).'</a>',
-                'status_html' => $this->renderIssueStatusBadge($issue->status),
-                'priority_html' => (string) $issue->getPriorityBadgeHtml(),
-                'planned_start_at_html' => $this->formatDateTimeForTable($issue->planned_start_at),
-                'due_at_html' => $this->formatDateTimeForTable($issue->due_at),
-                'schedule_status_html' => $this->renderScheduleStatusBadge($issue),
-                'created_elapsed_html' => $this->formatIssueCreatedElapsedHtml($issue),
-                'last_action_at_html' => $this->formatIssueLastActionAtHtml($issue),
-                'assigned_to_html' => '<div class="d-flex align-items-center justify-content-between gap-2"><span>'.e($issue->assignee?->full_name ?? '-').'</span><button type="button" class="btn btn-sm btn-outline-primary" onclick="openAssignModal('.e((string) $issue->id).', '.e((string) $issue->business_id).')"><i class="ri-user-add-line"></i> Assign</button></div>',
-            ];
+        foreach ($rows as $issue) {
+            $data[] = $this->formatIssueCardData($issue);
         }
 
         return response()->json([
             'draw' => (int) $request->input('draw', 1),
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsTotal,
+            'recordsTotal' => $recordsFiltered,
+            'recordsFiltered' => $recordsFiltered,
             'data' => $data,
         ]);
     }
@@ -726,6 +722,32 @@ class IssueController extends Controller
         return response()->json(['success' => true, 'label' => $issue->priority_label]);
     }
 
+    protected function formatIssueCardData(Issue $issue): array
+    {
+        $latestComment = $issue->relationLoaded('comments') ? $issue->comments->first() : null;
+        $viewUrl = route('office.issue.view', ['business' => $issue->business_id, 'id' => $issue->id]);
+
+        return [
+            'id' => $issue->id,
+            'business_id' => $issue->business_id,
+            'business_name' => $issue->business?->business_name ?? '',
+            'issue_project_name' => $issue->issueProject?->name ?? '',
+            'issue_number' => $issue->issue_number,
+            'title_plain' => $issue->title,
+            'description' => $latestComment?->comment ?? $issue->firstComment?->comment ?? '',
+            'status' => $issue->status,
+            'priority' => $issue->priority,
+            'assigned_to' => $issue->assignee?->full_name ?? '',
+            'view_url' => $viewUrl,
+            'edit_url' => $viewUrl,
+            'created_at_formatted' => optional($issue->created_at)->format('d/m/Y H:i'),
+            'comments_count' => (int) ($issue->comments_count ?? 0),
+            'latest_comment' => $latestComment?->comment,
+            'latest_comment_user' => $latestComment?->user?->full_name ?? '-',
+            'latest_comment_created_at' => optional($latestComment?->created_at)->format('d/m/Y H:i'),
+        ];
+    }
+
     protected function applyIssueFilters(Builder $query, Request $request): void
     {
         if ($request->filled('wording')) {
@@ -831,6 +853,15 @@ class IssueController extends Controller
             'files.*' => 'string',
             'issue_project_id' => ['nullable', 'integer', 'exists:issue_projects,id'],
         ];
+    }
+
+    protected function resolveIssueBusiness(?string $business = null): string
+    {
+        if ($business !== null && $business !== '') {
+            return $business;
+        }
+
+        return issueBusinessId();
     }
 
     protected function resolvePriorityFromRequest(Request $request): string

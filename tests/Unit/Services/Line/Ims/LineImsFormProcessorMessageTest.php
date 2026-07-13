@@ -20,13 +20,13 @@ class LineImsFormProcessorMessageTest extends TestCase
         $processor = app(LineImsFormProcessor::class);
 
         $this->assertSame(
-            'https://co-work.bluelane.co.th/issue/9c9aafbc-f74a-4e30-b44a-1209b30431ad/view/4',
+            'https://co-work.bluelane.co.th/issue/view/4',
             $processor->issueViewUrl('9c9aafbc-f74a-4e30-b44a-1209b30431ad', 4),
         );
 
         $message = $processor->successMessage($issue, '9c9aafbc-f74a-4e30-b44a-1209b30431ad');
 
-        $this->assertStringContainsString('https://co-work.bluelane.co.th/issue/9c9aafbc-f74a-4e30-b44a-1209b30431ad/view/4', $message);
+        $this->assertStringContainsString('https://co-work.bluelane.co.th/issue/view/4', $message);
         $this->assertStringContainsString('กรุณาตรวจสอบและรีวิวรายละเอียด:', $message);
     }
 }

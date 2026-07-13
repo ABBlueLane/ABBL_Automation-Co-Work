@@ -63,7 +63,7 @@ class IssuePublicViewTest extends TestCase
             'files' => [],
         ]);
 
-        $this->get("/issue/{$this->businessId}/view/{$issue->id}")
+        $this->get("/issue/view/{$issue->id}")
             ->assertOk()
             ->assertSee('ปัญหาจาก LINE')
             ->assertSee('รายละเอียดจาก LINE');
@@ -82,11 +82,45 @@ class IssuePublicViewTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)
-            ->getJson("/issue/{$this->businessId}/table", ['draw' => 1, 'start' => 0, 'length' => 10]);
+            ->getJson('/issue/my/table', ['draw' => 1, 'start' => 0, 'length' => 10]);
 
         $response->assertOk()
             ->assertJsonPath('data.0.id', $issue->id)
-            ->assertJsonPath('data.0.view_url', route('issue.view', [$this->businessId, $issue->id]))
-            ->assertJsonPath('data.0.edit_url', route('issue.create', [$this->businessId, 'draft' => $issue->id]));
+            ->assertJsonPath('data.0.view_url', route('issue.view', $issue->id))
+            ->assertJsonPath('data.0.edit_url', route('issue.create', ['draft' => $issue->id]));
+    }
+
+    public function test_legacy_business_issue_index_redirects_to_issue(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get("/issue/{$this->businessId}")
+            ->assertRedirect(route('issue.index', ['business_id' => $this->businessId]));
+    }
+
+    public function test_legacy_business_issue_view_redirects_to_issue_view(): void
+    {
+        $issue = Issue::create([
+            'business_id' => $this->businessId,
+            'issue_number' => 'ABBL-IMS202607-000006',
+            'title' => 'Legacy redirect',
+            'status' => Issue::STATUS_PENDING,
+            'priority' => Issue::PRIORITY_MEDIUM,
+            'created_by' => 1,
+        ]);
+
+        $this->get("/issue/{$this->businessId}/view/{$issue->id}")
+            ->assertRedirect(route('issue.view', $issue->id));
+    }
+
+    public function test_authenticated_user_can_view_issue_index(): void
+    {
+        $user = User::factory()->create(['id' => 2]);
+
+        $this->actingAs($user)
+            ->get('/issue/my')
+            ->assertOk()
+            ->assertSee('รายการ Issue ABBL Automation Co-Work');
     }
 }

@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\DB;
 
 class IssueCommentController extends Controller
 {
-    public function index(string $business, Issue $issue): JsonResponse
+    public function index(Issue $issue, ?string $business = null): JsonResponse
     {
+        $business = $business ?? issueBusinessId();
         if ((string) $issue->business_id !== (string) $business) {
             abort(403);
         }
@@ -39,8 +40,9 @@ class IssueCommentController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $business, Issue $issue): JsonResponse
+    public function store(Request $request, Issue $issue, ?string $business = null): JsonResponse
     {
+        $business = $business ?? issueBusinessId();
         if ((string) $issue->business_id !== (string) $business) {
             abort(403);
         }

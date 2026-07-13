@@ -141,11 +141,11 @@
                     <p>ดูประวัติการใช้งานระบบ</p>
                 </div>
             </a>
-            <a href="{{ route('business.select') }}" class="dashboard-link-card">
+            <a href="{{ route('admin.issues.index') }}" class="dashboard-link-card">
                 <i class="ri-bug-line"></i>
                 <div>
                     <h3>Issue Management</h3>
-                    <p>จัดการ Issue ตามธุรกิจ</p>
+                    <p>ดูและจัดการ Issue ทั้งหมดในระบบ</p>
                 </div>
             </a>
         </div>

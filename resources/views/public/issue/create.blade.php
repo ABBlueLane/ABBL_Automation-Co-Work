@@ -359,7 +359,7 @@
                         <div class="row">
                             <div class="col-lg-6 col-12">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-dark btn-sm flex-shrink-0">
+                                    <a href="{{ route('issue.index') }}" class="btn btn-outline-dark btn-sm flex-shrink-0">
                                         <i class="ri-arrow-left-line me-1"></i>
                                         ย้อนกลับ
                                     </a>
@@ -375,7 +375,7 @@
                                         <a href="{{ route('business.select') }}">เลือกธุรกิจ</a>
                                     </li>
                                     <li class="breadcrumb-item">
-                                        <a href="{{ route('issue.index', $business) }}">Issue Management</a>
+                                        <a href="{{ route('issue.index') }}">Issue Management</a>
                                     </li>
                                     <li class="breadcrumb-item active">
                                         Issue Create
@@ -543,7 +543,7 @@
                         {{-- ปุ่ม --}}
                         <div class="col-lg-12 pt-2">
                             <div class="d-flex flex-wrap justify-content-end gap-2">
-                                <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-danger btn-icon-action"
+                                <a href="{{ route('issue.index') }}" class="btn btn-outline-danger btn-icon-action"
                                     title="ยกเลิก">
                                     <i class="ri-delete-bin-line"></i>
                                 </a>
@@ -590,7 +590,7 @@
                     </div>
                     <div id="step3DetailBody"></div>
                     <div class="wizard-step-actions d-flex flex-wrap justify-content-center gap-2">
-                        <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-secondary">
+                        <a href="{{ route('issue.index') }}" class="btn btn-outline-secondary">
                             <i class="ri-list-check me-1"></i> กลับหน้ารายการ
                         </a>
                         <a href="#" class="btn btn-primary" id="viewIssueBtn">
@@ -609,9 +609,9 @@
         let existingFiles = @json($issue?->firstComment->files ?? []);
         let originalComment = @json($issue?->firstComment->comment ?? '');
         const isDuplicateTemplate = @json($isDuplicateTemplate ?? false);
-        const previewUrl = "{{ route('issue.preview', $business) }}";
-        const storeSubmitUrl = "{{ route('issue.store.submit', $business) }}";
-        const issueIndexBase = "{{ route('issue.index', $business) }}";
+        const previewUrl = "{{ route('issue.preview') }}";
+        const storeSubmitUrl = "{{ route('issue.store.submit') }}";
+        const issueIndexBase = "{{ route('issue.index') }}";
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
         let currentStep = 1;
@@ -653,7 +653,7 @@
         }
 
         let myDropzone = new Dropzone("#mediaDropzone", {
-            url: "{{ route('issue.upload', $business) }}",
+            url: "{{ route('issue.upload') }}",
             paramName: "file",
             headers: {
                 'X-CSRF-TOKEN': "{{ csrf_token() }}"

@@ -12,12 +12,12 @@
             <tr>
                 <td>{{ $key + 1 }}</td>
                 <td>
-                    <a href="{{ route('issue.view', [$business, $issue->id]) }}" class="text-primary">
+                    <a href="{{ route('issue.view', $issue->id) }}" class="text-primary">
                         {{ $issue->issue_number }}
                     </a>
                 </td>
                 <td>
-                    <a href="{{ route('issue.view', [$business, $issue->id]) }}" class="text-primary">
+                    <a href="{{ route('issue.view', $issue->id) }}" class="text-primary">
                         {{ $issue->title }}
                     </a>
                 </td>

@@ -13,7 +13,7 @@
                 รายการ Issue {{ $business->business_name }}
             </h4>
             <div class="flex-shrink-0 ms-auto">
-                <a href="{{ route('issue.create', $business) }}" class="btn btn-primary btn-sm rounded-pill d-flex align-items-center gap-1 px-3 py-2 shadow-sm">
+                <a href="{{ route('issue.create') }}" class="btn btn-primary btn-sm rounded-pill d-flex align-items-center gap-1 px-3 py-2 shadow-sm">
                     <i class="ri-add-line align-bottom fs-5"></i>
                     เพิ่ม Issue
                 </a>
@@ -106,8 +106,8 @@
         let currentPage = 1;
         const itemsPerPage = 6;
         let activeIssueId = null;
-        const commentsUrlTemplate = "{{ route('issue.comments.index', [$business, '__ISSUE_ID__']) }}";
-        const commentStoreUrlTemplate = "{{ route('issue.comment.store', [$business, '__ISSUE_ID__']) }}";
+        const commentsUrlTemplate = "{{ route('issue.comments.index', ['issue' => '__ISSUE_ID__']) }}";
+        const commentStoreUrlTemplate = "{{ route('issue.comment.store', ['issue' => '__ISSUE_ID__']) }}";
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, function(match) {
@@ -254,7 +254,7 @@
             let startRow = (currentPage - 1) * itemsPerPage;
 
             $.ajax({
-                url: "{{ route('issue.table', $business) }}",
+                url: "{{ route('issue.table') }}",
                 type: "GET",
                 data: {
                     wording: $("#qt_wording").val(),

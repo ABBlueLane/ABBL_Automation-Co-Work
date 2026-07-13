@@ -95,7 +95,7 @@
                         <div class="row">
                             <div class="col-lg-6 col-12">
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <a href="{{ route('issue.index', $business) }}" class="btn btn-outline-dark btn-sm flex-shrink-0">
+                                    <a href="{{ route('issue.index') }}" class="btn btn-outline-dark btn-sm flex-shrink-0">
                                         <i class="ri-arrow-left-line me-1"></i>
                                         ย้อนกลับ
                                     </a>
@@ -112,7 +112,7 @@
                                         <a href="{{ route('business.select') }}">เลือกธุรกิจ</a>
                                     </li>
                                     <li class="breadcrumb-item">
-                                        <a href="{{ route('issue.index', $business) }}">Issue Management</a>
+                                        <a href="{{ route('issue.index') }}">Issue Management</a>
                                     </li>
                                     <li class="breadcrumb-item active">
                                         Issue View
@@ -139,7 +139,7 @@
                                 </p>
                             </div>
                             <div class="d-flex flex-wrap gap-2 flex-shrink-0">
-                                <a href="{{ route('issue.create', $business) }}?draft={{ $issue->id }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ route('issue.create') }}?draft={{ $issue->id }}" class="btn btn-sm btn-outline-primary">
                                     <i class="ri-edit-line me-1"></i> แก้ไขร่าง
                                 </a>
                                 <button type="button" class="btn btn-sm btn-success" id="submitDraftFromView">
@@ -159,7 +159,7 @@
                             <div class="col-12 col-md">
                                 @php
                                     $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
-                                    $issueViewUrl = route('issue.view', [$business, $issue->id]);
+                                    $issueViewUrl = route('issue.view', $issue->id);
                                 @endphp
                                 <h3 class="fw-bold mb-1 text-dark">
     <i class="ri-bug-line me-2 text-primary"></i>Issue #{{ $issue->issue_number }}<button
@@ -229,14 +229,14 @@
                                                 <i class="ri-check-line me-1"></i> Approve and close issue
                                             </button>
                                         @endif
-                                        <a href="{{ route('issue.index', $business) }}" class="btn btn-primary btn-sm">
+                                        <a href="{{ route('issue.index') }}" class="btn btn-primary btn-sm">
                                             <i class="ri-file-list-3-line me-1"></i> Home
                                         </a>
-                                        <a href="{{ route('issue.duplicate', [$business, $issue->id]) }}"
+                                        <a href="{{ route('issue.duplicate', $issue->id) }}"
                                             class="btn btn-warning btn-sm btn-duplicate">
                                             <i class="ri-file-copy-line me-1"></i> Duplicate
                                         </a>
-                                        <a href="{{ route('issue.create', $business) }}" class="btn btn-primary btn-sm">
+                                        <a href="{{ route('issue.create') }}" class="btn btn-primary btn-sm">
                                             <i class="ri-add-line me-1"></i> Create new
                                         </a>
 
@@ -461,7 +461,7 @@ video/mp4,video/webm,video/quicktime,
                     formData.append("file", file);
                     formData.append("_token", "{{ csrf_token() }}");
 
-                    fetch("{{ route('issue.upload', $business) }}", {
+                    fetch("{{ route('issue.upload') }}", {
                             method: "POST",
                             body: formData
                         })
@@ -537,7 +537,7 @@ video/mp4,video/webm,video/quicktime,
                 }
             });
             $.ajax({
-                url: "{{ route('issue.comment.store', [$business, $issue->id]) }}",
+                url: "{{ route('issue.comment.store', $issue->id) }}",
                 method: "POST",
                 data: formData,
                 processData: false,
@@ -583,7 +583,7 @@ video/mp4,video/webm,video/quicktime,
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
-                        url: "{{ route('issue.close', [$business, $issue->id]) }}",
+                        url: "{{ route('issue.close', $issue->id) }}",
                         method: "POST",
                         headers: {
                             "X-CSRF-TOKEN": "{{ csrf_token() }}"
@@ -640,7 +640,7 @@ video/mp4,video/webm,video/quicktime,
                         didOpen: () => Swal.showLoading()
                     });
                     $.ajax({
-                        url: "{{ route('issue.submit', [$business, $issue->id]) }}",
+                        url: "{{ route('issue.submit', $issue->id) }}",
                         method: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",

@@ -38,8 +38,10 @@ class IssueCommentControllerTest extends TestCase
             'comment' => 'ข้อความทดสอบสำหรับ modal',
         ]);
 
+        config()->set('services.line.ims.default_business_id', $business->id);
+
         $response = $this->actingAs($user)
-            ->getJson(route('issue.comments.index', [$business->id, $issue->id]));
+            ->getJson(route('issue.comments.index', $issue->id));
 
         $response->assertOk();
         $response->assertJsonPath('success', true);
