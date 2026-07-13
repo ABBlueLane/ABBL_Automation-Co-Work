@@ -14,6 +14,6 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertRedirect(route('api_clients.index'));
+        $response->assertRedirect(route('dashboard'));
     }
 }

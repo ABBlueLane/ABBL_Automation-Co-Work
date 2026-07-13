@@ -442,6 +442,67 @@ class IssueController extends Controller
         return view('public.issue._form_review_summary', compact('issue', 'issueProject', 'business'))->render();
     }
 
+    public function adminIndex()
+    {
+        $staffs = User::query()->where('status', 'active')->orderBy('first_name')->get();
+        $issueProjects = IssueProject::query()->orderBy('name')->get();
+        $businesses = Business::query()
+            ->where('business_status', 1)
+            ->orderBy('business_name')
+            ->get();
+
+        return view('issue.index', compact('staffs', 'issueProjects', 'businesses'));
+    }
+
+    public function adminTable(Request $request): JsonResponse
+    {
+        $query = Issue::with(['business', 'assignee', 'issueProject'])
+            ->where('status', '!=', Issue::STATUS_DRAFT)
+            ->addSelect([
+                'last_comment_created_at' => IssueComment::query()
+                    ->selectRaw('MAX(created_at)')
+                    ->whereColumn('issue_id', 'issues.id'),
+            ]);
+
+        if ($request->filled('business_id')) {
+            $query->where('business_id', $request->input('business_id'));
+        }
+
+        $this->applyIssueFilters($query, $request);
+
+        $recordsTotal = (clone $query)->count();
+        $rows = $query->skip((int) $request->input('start', 0))
+            ->take((int) $request->input('length', 100))
+            ->get();
+
+        $data = [];
+        foreach ($rows as $i => $issue) {
+            $viewUrl = route('office.issue.view', ['business' => $issue->business_id, 'id' => $issue->id]);
+            $data[] = [
+                'DT_RowIndex' => (int) $request->input('start', 0) + $i + 1,
+                'issue_number' => '<a href="'.$viewUrl.'" class="text-primary">'.e($issue->issue_number).'</a>',
+                'business_html' => $issue->business?->business_name ? e($issue->business->business_name) : '<span class="text-muted">-</span>',
+                'issue_project_html' => $issue->issueProject?->name ? e($issue->issueProject->name) : '<span class="text-muted">-</span>',
+                'title_html' => '<a href="'.$viewUrl.'" class="text-primary">'.e($issue->title).'</a>',
+                'status_html' => $this->renderIssueStatusBadge($issue->status),
+                'priority_html' => (string) $issue->getPriorityBadgeHtml(),
+                'planned_start_at_html' => $this->formatDateTimeForTable($issue->planned_start_at),
+                'due_at_html' => $this->formatDateTimeForTable($issue->due_at),
+                'schedule_status_html' => $this->renderScheduleStatusBadge($issue),
+                'created_elapsed_html' => $this->formatIssueCreatedElapsedHtml($issue),
+                'last_action_at_html' => $this->formatIssueLastActionAtHtml($issue),
+                'assigned_to_html' => '<div class="d-flex align-items-center justify-content-between gap-2"><span>'.e($issue->assignee?->full_name ?? '-').'</span><button type="button" class="btn btn-sm btn-outline-primary" onclick="openAssignModal('.e((string) $issue->id).', '.e((string) $issue->business_id).')"><i class="ri-user-add-line"></i> Assign</button></div>',
+            ];
+        }
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 1),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsTotal,
+            'data' => $data,
+        ]);
+    }
+
     public function staffIndex(Request $request, string $business)
     {
         Session::put('mainBusinessID', $business);
