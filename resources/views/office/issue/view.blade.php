@@ -25,26 +25,27 @@
             <div class="card mb-4">
                 <div class="card-body">
 
+
                     {{-- TITLE --}}
-                    <div class="d-flex align-items-start justify-content-between mb-3">
-                        <div>
-                            <h3 class="fw-bold mb-1 text-dark">
-                                <i class="ri-bug-line me-2 text-primary"></i>
-                                {{ $issue->title }}
-                            </h3>
+<div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+        <h3 class="fw-bold mb-1 text-dark">
+            <i class="ri-bug-line me-2 text-primary"></i>
+            Issue #{{ $issue->issue_number }}
+        </h3>
 
-                            <div class="text-muted small">
-                                Issue #{{ $issue->issue_number }}
-                            </div>
-                        </div>
+        <div class="text-muted small">
+            {{ $issue->title }}
+        </div>
+    </div>
 
-                        <div>
-                            @php
-                                $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
-                            @endphp
-                            <span class="badge {{ $statusMeta['class'] }}">{{ $statusMeta['label'] }}</span>
-                        </div>
-                    </div>
+    <div>
+        @php
+            $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
+        @endphp
+        <span class="badge {{ $statusMeta['class'] }}">{{ $statusMeta['label'] }}</span>
+    </div>
+</div>
 
                     <hr class="mt-2 mb-4">
 
