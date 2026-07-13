@@ -14,7 +14,7 @@
                         <a href="{{ route('business.select') }}">เลือกธุรกิจ</a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">
-                        Issue Management
+                        จัดการปัญหา
                     </li>
                 </ol>
             </div>
@@ -24,7 +24,7 @@
         <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3 issue-page-header">
             <div class="page-heading">
                 <h1 class="mb-1 fw-bold text-dark" style="font-size: 1.75rem;">
-                    จัดการ Issue
+                    จัดการปัญหา
                 </h1>
                 <p class="mb-0 text-muted" style="font-size: 0.98rem;">
                     จัดการและติดตามปัญหาธุรกิจทั้งหมดอย่างมีประสิทธิภาพ
