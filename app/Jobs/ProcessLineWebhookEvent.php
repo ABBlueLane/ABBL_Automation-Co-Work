@@ -129,6 +129,19 @@ class ProcessLineWebhookEvent implements ShouldQueue
             return;
         }
 
+        $lineMessageId = $this->event['message']['id'] ?? null;
+
+        if (is_string($lineMessageId) && $lineMessageId !== '') {
+            $alreadyProcessed = LineChatMessage::query()
+                ->where('line_chat_source_id', $chatSource->id)
+                ->where('message_id', $lineMessageId)
+                ->exists();
+
+            if ($alreadyProcessed) {
+                return;
+            }
+        }
+
         $message = LineChatMessage::query()->firstOrCreate(
             ['webhook_event_id' => $this->webhookEventId()],
             [
@@ -269,7 +282,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 implode("\n", [
                     $intro,
                     '',
-                    'เมื่อแจ้งครบแล้ว @OA แล้วพิมพ์ เสร็จสิ้น เสร็จแล้ว หรือ ยืนยัน เพื่อหยุดรับข้อมูล',
+                    'เมื่อแจ้งครบแล้ว @OA แล้วพิมพ์ ยืนยัน',
                 ]),
                 $this->event['replyToken'] ?? null,
             );

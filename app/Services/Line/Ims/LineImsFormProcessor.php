@@ -60,7 +60,7 @@ class LineImsFormProcessor
             if ($mapped['action'] === IssueCreateFormMapper::ACTION_SUBMIT) {
                 $this->notifyGroup(
                     $chatSource,
-                    'กรุณา @OA แล้วพิมพ์ เสร็จสิ้น เสร็จแล้ว หรือ ยืนยัน เพื่อส่งเข้าระบบ',
+                    'กรุณา @OA แล้วพิมพ์ ยืนยัน เพื่อส่งเข้าระบบ',
                     $replyToken,
                 );
 
@@ -430,18 +430,7 @@ class LineImsFormProcessor
      */
     private function replyStatus(LineChatSource $chatSource, array $formState, ?string $replyToken): void
     {
-        $title = trim((string) ($formState['title'] ?? ''));
-        $titleLabel = $title !== '' ? $title : '-';
-        $missing = implode(', ', $formState['missing_fields'] ?? []);
-        $fileCount = count((array) ($formState['files'] ?? []));
-
-        $message = "บันทึกแล้ว — เรื่อง: {$titleLabel} | ยังขาด: {$missing}";
-
-        if ($fileCount > 0) {
-            $message .= " | แนบไฟล์แล้ว ({$fileCount} ไฟล์)";
-        }
-
-        $this->notifyGroup($chatSource, $message, $replyToken);
+        $this->notifyGroup($chatSource, 'บันทึกข้อความล่าสุดแล้ว', $replyToken);
     }
 
     /**

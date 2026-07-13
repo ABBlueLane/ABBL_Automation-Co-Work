@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Business;
 use App\Models\Issue;
+use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
 use App\Models\User;
 use App\Services\Line\Ims\LineContentDownloader;
@@ -193,6 +194,36 @@ class LineImsWebhookTest extends TestCase
         $source = LineChatSource::query()->where('source_id', 'group-ims-4')->first();
 
         $this->assertSame('หัวข้อเดิม', $source?->form_state['title']);
+        $this->assertSame(1, LineChatMessage::query()->where('message_id', 'message-redelivery-form')->count());
+    }
+
+    public function test_same_line_message_id_with_different_webhook_event_is_processed_once(): void
+    {
+        $this->startCollecting('group-ims-dedupe');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dedupe-1',
+                    'text' => 'ข้อความซ้ำ',
+                    'groupId' => 'group-ims-dedupe',
+                    'messageId' => 'line-message-dedupe',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-dedupe-2',
+                    'text' => 'ข้อความซ้ำ',
+                    'groupId' => 'group-ims-dedupe',
+                    'messageId' => 'line-message-dedupe',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->assertSame(1, LineChatMessage::query()->where('message_id', 'line-message-dedupe')->count());
     }
 
     public function test_redelivery_after_submit_does_not_send_duplicate_success_messages(): void
