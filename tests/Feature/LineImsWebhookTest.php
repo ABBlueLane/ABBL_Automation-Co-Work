@@ -530,6 +530,41 @@ class LineImsWebhookTest extends TestCase
         $this->assertArrayNotHasKey('pending_initial_message', $source?->form_state ?? []);
     }
 
+    public function test_confirm_start_failure_restores_confirmation_state(): void
+    {
+        config()->set('services.line.ims.default_business_id', 'missing-business-id');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-confirm-fail-mention',
+                    'text' => '@ABBL Bot ลูกค้าเข้าระบบไม่ได้',
+                    'groupId' => 'group-ims-confirm-fail',
+                    'messageId' => 'message-confirm-fail-mention',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-confirm-fail',
+                    'text' => 'สร้าง',
+                    'groupId' => 'group-ims-confirm-fail',
+                    'messageId' => 'message-confirm-fail',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-confirm-fail')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertTrue($source?->form_state['awaiting_ims_confirmation'] ?? false);
+        $this->assertSame('ลูกค้าเข้าระบบไม่ได้', $source?->form_state['pending_initial_message'] ?? null);
+    }
+
     public function test_mention_with_problem_text_using_line_indexes_is_saved_after_confirmation(): void
     {
         $this->postSignedWebhook([

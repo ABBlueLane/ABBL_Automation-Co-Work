@@ -15,7 +15,7 @@ class AuthController extends Controller
     public function showLoginForm(Request $request): RedirectResponse|View
     {
         if (Auth::check()) {
-            return redirect()->route('api_clients.index');
+            return redirect()->route('dashboard');
         }
 
         return view('auth.login', [
@@ -51,7 +51,7 @@ class AuthController extends Controller
 
         $redirectTo = $this->sanitizeRedirect((string) ($validated['red'] ?? ''));
 
-        return redirect()->to($redirectTo ?: route('api_clients.index'));
+        return redirect()->to($redirectTo ?: route('dashboard'));
     }
 
     public function logout(Request $request): RedirectResponse
