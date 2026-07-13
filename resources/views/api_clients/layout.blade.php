@@ -294,6 +294,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('logs.*') ? 'active' : '' }}" href="{{ route('logs.index') }}">
+                                <i class="ri-file-list-3-line"></i> <span>Logs</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link menu-link {{ request()->routeIs('business.select') || request()->routeIs('issue.*') || request()->routeIs('office.issue.*') ? 'active' : '' }}" href="{{ route('business.select') }}">
                                 <i class="ri-bug-line"></i> <span>Issue Management</span>
                             </a>

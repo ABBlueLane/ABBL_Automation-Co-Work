@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Business;
 use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
+use App\Models\User;
 use App\Services\Line\LineMessagingClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
@@ -52,10 +54,12 @@ class LineWebhookTest extends TestCase
     public function test_start_command_makes_source_active(): void
     {
         $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
-            $mock->shouldReceive('replyText')
-                ->once()
-                ->with('reply-token-start', 'เริ่มเก็บข้อมูลในกลุ่มนี้แล้ว');
+            $mock->shouldReceive('notifyChat')->andReturn(true);
+            $mock->shouldReceive('replyText')->andReturn(true);
+            $mock->shouldReceive('pushText')->andReturn(true);
         });
+
+        $this->seedImsDefaults();
 
         $this->postSignedWebhook([
             'events' => [
@@ -75,7 +79,12 @@ class LineWebhookTest extends TestCase
             'source_id' => 'group-1',
             'is_collecting' => true,
             'started_by_user_id' => 'user-1',
+            'form_type' => LineChatSource::FORM_TYPE_ISSUE_CREATE,
         ]);
+
+        $source = LineChatSource::query()->where('source_id', 'group-1')->first();
+        $this->assertNotNull($source?->draft_issue_id);
+        $this->assertNotNull($source?->form_state);
     }
 
     public function test_inactive_group_does_not_store_general_message(): void
@@ -103,11 +112,21 @@ class LineWebhookTest extends TestCase
 
     public function test_active_group_stores_general_message(): void
     {
+        $this->seedImsDefaults();
+
         LineChatSource::query()->create([
             'source_type' => 'group',
             'source_id' => 'group-1',
             'is_collecting' => true,
+            'business_id' => '9c9aafbc-f74a-4e30-b44a-1209b30431ad',
+            'form_type' => LineChatSource::FORM_TYPE_ISSUE_CREATE,
+            'form_state' => LineChatSource::defaultIssueCreateFormState(),
         ]);
+
+        $this->mock(LineMessagingClient::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('notifyChat')->andReturn(true);
+            $mock->shouldReceive('replyText')->andReturn(true);
+        });
 
         $this->postSignedWebhook([
             'events' => [
@@ -198,5 +217,41 @@ class LineWebhookTest extends TestCase
                 ],
             ],
         ];
+    }
+
+    private function seedImsDefaults(): void
+    {
+        $businessId = '9c9aafbc-f74a-4e30-b44a-1209b30431ad';
+
+        config()->set('services.line.ims.default_business_id', $businessId);
+        config()->set('services.line.ims.system_user_id', 1);
+        config()->set('services.line.ims.auto_submit', false);
+
+        Business::unguarded(function () use ($businessId): void {
+            Business::query()->firstOrCreate(
+                ['id' => $businessId],
+                [
+                    'business_type' => 1,
+                    'business_vat_status' => 1,
+                    'business_branch_status' => 1,
+                    'business_branch_no' => 0,
+                    'business_branch_name' => 'สำนักงานใหญ่',
+                    'business_en_status' => 1,
+                    'business_name_en' => 'ABBL Automation Co-Work',
+                    'business_branch_no_en' => 0,
+                    'business_branch_name_en' => 'Head Office',
+                    'business_account_finance_year' => 12,
+                    'business_business_finance_year' => 12,
+                    'business_code' => 'ABBL',
+                    'business_name' => 'ABBL Automation Co-Work',
+                    'business_address1' => 'Bangkok',
+                    'business_status' => 1,
+                    'allow_issue' => true,
+                    'sales_target_amount' => 1000000.00,
+                ],
+            );
+        });
+
+        User::factory()->create(['id' => 1]);
     }
 }

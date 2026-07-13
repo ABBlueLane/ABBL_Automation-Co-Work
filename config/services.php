@@ -32,6 +32,12 @@ return [
         'channel_secret' => env('LINE_CHANNEL_SECRET'),
         'channel_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN'),
         'webhook_route_secret' => env('LINE_WEBHOOK_ROUTE_SECRET'),
+        'ims' => [
+            'default_business_id' => env('LINE_IMS_DEFAULT_BUSINESS_ID'),
+            'system_user_id' => env('LINE_IMS_SYSTEM_USER_ID'),
+            'auto_submit' => env('LINE_IMS_AUTO_SUBMIT', true),
+            'public_base_url' => env('LINE_IMS_PUBLIC_BASE_URL', env('APP_URL')),
+        ],
     ],
 
     'slack' => [
