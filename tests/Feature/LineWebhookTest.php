@@ -77,6 +77,29 @@ class LineWebhookTest extends TestCase
         $this->assertDatabaseHas('line_chat_sources', [
             'source_type' => 'group',
             'source_id' => 'group-1',
+            'is_collecting' => false,
+        ]);
+
+        $source = LineChatSource::query()->where('source_id', 'group-1')->first();
+        $this->assertTrue($source?->form_state['awaiting_ims_confirmation'] ?? false);
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-confirm',
+                    'replyToken' => 'reply-token-confirm',
+                    'text' => 'สร้าง',
+                    'groupId' => 'group-1',
+                    'userId' => 'user-1',
+                    'messageId' => 'message-confirm',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('line_chat_sources', [
+            'source_type' => 'group',
+            'source_id' => 'group-1',
             'is_collecting' => true,
             'started_by_user_id' => 'user-1',
             'form_type' => LineChatSource::FORM_TYPE_ISSUE_CREATE,
@@ -85,6 +108,7 @@ class LineWebhookTest extends TestCase
         $source = LineChatSource::query()->where('source_id', 'group-1')->first();
         $this->assertNotNull($source?->draft_issue_id);
         $this->assertNotNull($source?->form_state);
+        $this->assertFalse($source?->form_state['awaiting_ims_confirmation'] ?? false);
     }
 
     public function test_inactive_group_does_not_store_general_message(): void
