@@ -68,4 +68,25 @@ class IssuePublicViewTest extends TestCase
             ->assertSee('ปัญหาจาก LINE')
             ->assertSee('รายละเอียดจาก LINE');
     }
+
+    public function test_table_includes_edit_url_for_draft_issue(): void
+    {
+        $user = User::factory()->create(['id' => 2]);
+        $issue = Issue::create([
+            'business_id' => $this->businessId,
+            'issue_number' => 'ABBL-IMS202607-000005',
+            'title' => 'แบบร่างที่ต้องแก้ไข',
+            'status' => Issue::STATUS_DRAFT,
+            'priority' => Issue::PRIORITY_LOW,
+            'created_by' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson("/issue/{$this->businessId}/table", ['draw' => 1, 'start' => 0, 'length' => 10]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.id', $issue->id)
+            ->assertJsonPath('data.0.view_url', route('issue.view', [$this->businessId, $issue->id]))
+            ->assertJsonPath('data.0.edit_url', route('issue.create', [$this->businessId, 'draft' => $issue->id]));
+    }
 }

@@ -11,6 +11,34 @@ use Illuminate\Support\Facades\DB;
 
 class IssueCommentController extends Controller
 {
+    public function index(string $business, Issue $issue): JsonResponse
+    {
+        if ((string) $issue->business_id !== (string) $business) {
+            abort(403);
+        }
+
+        $comments = IssueComment::query()
+            ->where('issue_id', $issue->id)
+            ->with('user')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'comments' => $comments->map(function (IssueComment $comment): array {
+                return [
+                    'id' => $comment->id,
+                    'comment' => $comment->comment,
+                    'created_at' => optional($comment->created_at)->format('d/m/Y H:i'),
+                    'user' => $comment->user ? [
+                        'id' => $comment->user->id,
+                        'full_name' => $comment->user->full_name ?? $comment->user->name,
+                    ] : null,
+                ];
+            })->values(),
+        ]);
+    }
+
     public function store(Request $request, string $business, Issue $issue): JsonResponse
     {
         if ((string) $issue->business_id !== (string) $business) {

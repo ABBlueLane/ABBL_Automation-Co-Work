@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/{issue}/submit', [IssueController::class, 'submitDraft'])->name('submit');
         Route::post('/upload', [IssueController::class, 'upload'])->name('upload');
         Route::get('/table', [IssueController::class, 'table'])->name('table');
+        Route::get('/issue/{issue}/comments', [IssueCommentController::class, 'index'])->name('comments.index');
         Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store'])->name('comment.store');
         Route::post('/issue/{issue}/close', [IssueController::class, 'close'])->name('close');
         Route::get('/{issue}/duplicate', [IssueController::class, 'duplicate'])->name('duplicate');
