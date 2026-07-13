@@ -57,9 +57,12 @@ class IssueController extends Controller
 
     public function table(Request $request, Business $business)
     {
-        // 1. เพิ่ม ->withCount('comments') เข้าไปในตอน Query ข้อมูล
         $query = Issue::where('business_id', $business->id)
-                      ->withCount('comments'); // Laravel จะสร้างตัวแปร comments_count ให้นับอัตโนมัติ
+                      ->withCount('comments')
+                      ->with(['comments' => function ($commentsQuery) {
+                          $commentsQuery->with('user')->latest()->limit(1);
+                      }])
+                      ->orderByDesc('created_at');
 
         // ฟิลเตอร์คำค้นหา
         if ($request->filled('wording')) {
@@ -93,20 +96,29 @@ class IssueController extends Controller
 
         $data = [];
         foreach ($issues as $issue) {
-        $data[] = [
-            'id' => $issue->id,
-            'issue_number' => $issue->issue_number,
-            'title_plain' => $issue->title,
-            'description' => $issue->description,
-            'status' => $issue->status,
-            'priority' => $issue->priority,
-            'view_url' => route('issue.view', [$business, $issue->id]), // หรือ Route ปลายทางของคุณ
-            'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'), // ตัวอย่างฟอร์แมต
-            
-            // 2. [จุดสำคัญ] ต้องส่งค่า comments_count กลับมาให้หน้าบ้านด้วย
-            'comments_count' => (int)$issue->comments_count,
-        ];
-    }
+            $latestComment = $issue->comments->first();
+
+            $isEditableDraft = $issue->status === Issue::STATUS_DRAFT
+                && (int) $issue->created_by === (int) Auth::id();
+
+            $data[] = [
+                'id' => $issue->id,
+                'issue_number' => $issue->issue_number,
+                'title_plain' => $issue->title,
+                'description' => $issue->description,
+                'status' => $issue->status,
+                'priority' => $issue->priority,
+                'view_url' => route('issue.view', [$business->id, $issue->id]),
+                'edit_url' => $isEditableDraft
+                    ? route('issue.create', [$business->id, 'draft' => $issue->id])
+                    : route('issue.view', [$business->id, $issue->id]),
+                'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
+                'comments_count' => (int)$issue->comments_count,
+                'latest_comment' => $latestComment?->comment,
+                'latest_comment_user' => $latestComment?->user?->full_name ?? $latestComment?->user?->name ?? '-',
+                'latest_comment_created_at' => optional($latestComment?->created_at)->format('d/m/Y H:i'),
+            ];
+        }
 
         return response()->json([
             'draw' => intval($request->draw),
