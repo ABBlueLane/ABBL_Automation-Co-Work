@@ -17,7 +17,7 @@
 
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg bg-white border-bottom mb-3">
-        <div class="container-fluid">
+        <div class="@yield('navbar_container', 'container-fluid')">
             <a class="navbar-brand fw-bold" href="{{ route('business.select') }}">ABBL IMS</a>
             <div class="ms-auto d-flex gap-2">
                 <a class="btn btn-sm btn-outline-primary" href="{{ route('business.select') }}">เลือกธุรกิจ</a>
