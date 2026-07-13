@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Issue;
 use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
+use App\Services\Line\Ims\IssueCreateFormCompleter;
 use App\Services\Line\Ims\LineImsFormProcessor;
 use App\Services\Line\LineCommandParser;
 use App\Services\Line\LineMessagingClient;
@@ -106,7 +107,13 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 );
             } else {
                 $stopMessage = 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว';
-                $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
+                $missingNotice = $this->incompleteFormNotice($chatSource->fresh());
+
+                if ($missingNotice !== '') {
+                    $stopMessage .= "\n{$missingNotice}";
+                } else {
+                    $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
+                }
 
                 $messagingClient->notifyChat(
                     $source['id'],
@@ -186,6 +193,36 @@ class ProcessLineWebhookEvent implements ShouldQueue
         }
 
         return "\n(มีแบบร่างค้างอยู่: {$title})";
+    }
+
+    private function incompleteFormNotice(LineChatSource $chatSource): string
+    {
+        if ($chatSource->form_type !== LineChatSource::FORM_TYPE_ISSUE_CREATE) {
+            return '';
+        }
+
+        $formState = $chatSource->form_state ?? [];
+
+        if ($this->hasSubmittedFormState($formState)) {
+            return '';
+        }
+
+        $missing = app(IssueCreateFormCompleter::class)
+            ->missingFields($formState);
+
+        if ($missing === []) {
+            return '';
+        }
+
+        return '(ยังส่งเข้า IMS ไม่ได้ — ข้อมูลไม่ครบ: '.implode(', ', $missing).')';
+    }
+
+    /**
+     * @param  array<string, mixed>  $formState
+     */
+    private function hasSubmittedFormState(array $formState): bool
+    {
+        return ! empty($formState['submitted_issue_id']);
     }
 
     /**

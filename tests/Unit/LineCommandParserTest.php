@@ -67,6 +67,8 @@ class LineCommandParserTest extends TestCase
         );
         $this->assertNull($parser->pendingInitialMessageFromBody(''));
         $this->assertNull($parser->pendingInitialMessageFromBody('เริ่มเก็บข้อมูล'));
+        $this->assertNull($parser->pendingInitialMessageFromBody('สร้าง'));
+        $this->assertNull($parser->pendingInitialMessageFromBody('ยืนยัน'));
         $this->assertSame(
             'ระบบล่ม',
             $parser->pendingInitialMessageFromBody('เริ่มเก็บข้อมูล ระบบล่ม'),

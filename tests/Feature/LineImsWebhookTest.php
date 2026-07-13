@@ -561,7 +561,67 @@ class LineImsWebhookTest extends TestCase
         $this->assertSame('ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ', $source?->form_state['title']);
     }
 
-    public function test_stop_command_keeps_pending_draft(): void
+    public function test_confirm_with_create_mention_does_not_use_create_as_title(): void
+    {
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-create-mention',
+                    'text' => '@ABBL Bot สร้าง',
+                    'groupId' => 'group-ims-create-mention',
+                    'messageId' => 'message-create-mention',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-create-mention-confirm',
+                    'text' => 'สร้าง',
+                    'groupId' => 'group-ims-create-mention',
+                    'messageId' => 'message-create-mention-confirm',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-create-mention-problem',
+                    'text' => 'ลูกค้าเข้าสู่ระบบแล้ว แจ้งเตือนรหัสผ่านไม่ถูก',
+                    'groupId' => 'group-ims-create-mention',
+                    'messageId' => 'message-create-mention-problem',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-create-mention-stop',
+                    'text' => '@ABBL Bot ยืนยัน',
+                    'groupId' => 'group-ims-create-mention',
+                    'messageId' => 'message-create-mention-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-create-mention')->first();
+
+        $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
+        $this->assertDatabaseHas('issues', [
+            'id' => $source?->form_state['submitted_issue_id'],
+            'title' => 'ลูกค้าเข้าสู่ระบบแล้ว แจ้งเตือนรหัสผ่านไม่ถูก',
+            'status' => Issue::STATUS_PENDING,
+        ]);
+    }
+
+    public function test_stop_command_auto_submits_when_only_url_is_missing(): void
     {
         $this->startCollecting('group-ims-6');
 
@@ -592,8 +652,36 @@ class LineImsWebhookTest extends TestCase
         $source = LineChatSource::query()->where('source_id', 'group-ims-6')->first();
 
         $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
+        $this->assertDatabaseHas('issues', [
+            'id' => $source?->form_state['submitted_issue_id'],
+            'title' => 'draft ค้าง',
+            'status' => Issue::STATUS_PENDING,
+        ]);
+    }
+
+    public function test_stop_command_keeps_pending_draft_when_title_missing(): void
+    {
+        $this->startCollecting('group-ims-6-empty');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-stop-empty',
+                    'replyToken' => 'reply-token-stop-empty',
+                    'text' => '@ABBL Bot หยุดเก็บข้อมูล',
+                    'groupId' => 'group-ims-6-empty',
+                    'messageId' => 'message-stop-empty',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-6-empty')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
         $this->assertNotNull($source?->draft_issue_id);
-        $this->assertSame('draft ค้าง', $source?->form_state['title']);
+        $this->assertSame('', trim((string) ($source?->form_state['title'] ?? '')));
     }
 
     private function startCollecting(string $groupId): void

@@ -140,13 +140,43 @@ class LineImsFormProcessor
         }
 
         $chatSource = $this->ensureChatSourceConfigured($chatSource);
-        $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
+        $formState = $this->prepareFormStateForStopSubmit(
+            $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState(),
+        );
 
         if (! $this->completer->isComplete($formState)) {
             return null;
         }
 
-        return $this->attemptSubmit($chatSource, $formState, $replyToken, $webhookEventId, notifyOnSuccess: true);
+        $chatSource->update(['form_state' => $formState]);
+        $this->syncDraftIssue($chatSource->fresh(), $formState);
+
+        return $this->attemptSubmit($chatSource->fresh(), $formState, $replyToken, $webhookEventId, notifyOnSuccess: true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $formState
+     * @return array<string, mixed>
+     */
+    private function prepareFormStateForStopSubmit(array $formState): array
+    {
+        $title = trim((string) ($formState['title'] ?? ''));
+        $comment = trim((string) ($formState['comment'] ?? ''));
+
+        if (in_array(mb_strtolower($title), ['สร้าง', 'ไม่สร้าง'], true) && $comment !== '') {
+            $lines = preg_split("/\r\n|\n|\r/", $comment, 2) ?: [$comment];
+            $formState['title'] = mb_substr(trim((string) ($lines[0] ?? $comment)), 0, 255);
+            $formState['comment'] = trim((string) ($lines[1] ?? ''));
+        }
+
+        $missing = $this->completer->missingFields($formState);
+
+        if ($missing === ['url_or_no_url']) {
+            $formState['no_url'] = true;
+            $formState['url'] = null;
+        }
+
+        return $this->completer->applyMissingFields($formState);
     }
 
     public function successMessage(Issue $issue, string $businessId): string

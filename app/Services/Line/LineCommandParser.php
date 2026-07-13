@@ -125,6 +125,10 @@ class LineCommandParser
             }
         }
 
+        if (in_array($normalized, ['สร้าง', 'ไม่สร้าง', 'ยืนยัน', 'เสร็จสิ้น', 'เสร็จแล้ว'], true)) {
+            return null;
+        }
+
         return $body !== '' ? $body : null;
     }
 
