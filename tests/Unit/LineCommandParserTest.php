@@ -73,6 +73,30 @@ class LineCommandParserTest extends TestCase
         );
     }
 
+    public function test_extract_message_body_uses_line_mention_indexes(): void
+    {
+        $parser = new LineCommandParser;
+
+        $body = $parser->extractMessageBody([
+            'type' => 'message',
+            'message' => [
+                'type' => 'text',
+                'text' => '@ABBL Automation ระบบเข้าใช้งานไม่ได้',
+                'mention' => [
+                    'mentionees' => [
+                        [
+                            'index' => 0,
+                            'length' => 17,
+                            'isSelf' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->assertSame('ระบบเข้าใช้งานไม่ได้', $body);
+    }
+
     public function test_structured_label_is_not_treated_as_command(): void
     {
         $parser = new LineCommandParser;

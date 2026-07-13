@@ -426,6 +426,37 @@ class LineImsWebhookTest extends TestCase
         $this->assertArrayNotHasKey('pending_initial_message', $source?->form_state ?? []);
     }
 
+    public function test_mention_with_problem_text_using_line_indexes_is_saved_after_confirmation(): void
+    {
+        $this->postSignedWebhook([
+            'events' => [
+                $this->mentionTextEvent([
+                    'webhookEventId' => 'event-mention-index',
+                    'text' => '@ABBL Automation ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ',
+                    'mentionLength' => 17,
+                    'groupId' => 'group-ims-mention-index',
+                    'messageId' => 'message-mention-index',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-mention-index-confirm',
+                    'text' => 'สร้าง',
+                    'groupId' => 'group-ims-mention-index',
+                    'messageId' => 'message-mention-index-confirm',
+                    'mentionsSelf' => false,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-mention-index')->first();
+
+        $this->assertSame('ระบบเข้าใช้งานไม่ได้ ตรวจสอบให้หน่อยครับ', $source?->form_state['title']);
+    }
+
     public function test_stop_command_keeps_pending_draft(): void
     {
         $this->startCollecting('group-ims-6');
@@ -500,6 +531,42 @@ class LineImsWebhookTest extends TestCase
             'CONTENT_TYPE' => 'application/json',
             'HTTP_X_LINE_SIGNATURE' => $signature,
         ], $rawBody);
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function mentionTextEvent(array $overrides = []): array
+    {
+        $text = $overrides['text'] ?? '@ABBL Bot hello';
+        $mentionLength = $overrides['mentionLength'] ?? mb_strlen('@ABBL Bot');
+
+        return [
+            'type' => 'message',
+            'webhookEventId' => $overrides['webhookEventId'] ?? 'event-id',
+            'replyToken' => $overrides['replyToken'] ?? 'reply-token',
+            'timestamp' => $overrides['timestamp'] ?? 1783069200000,
+            'source' => [
+                'type' => 'group',
+                'groupId' => $overrides['groupId'] ?? 'group-id',
+                'userId' => $overrides['userId'] ?? 'user-id',
+            ],
+            'message' => [
+                'type' => 'text',
+                'id' => $overrides['messageId'] ?? 'message-id',
+                'text' => $text,
+                'mention' => [
+                    'mentionees' => [
+                        [
+                            'index' => 0,
+                            'length' => $mentionLength,
+                            'isSelf' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**

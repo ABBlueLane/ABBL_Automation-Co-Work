@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class ProcessLineWebhookEvent implements ShouldQueue
 {
@@ -74,10 +75,10 @@ class ProcessLineWebhookEvent implements ShouldQueue
             return;
         }
 
-        $chatSource = $this->upsertSource($source);
+        $chatSource = $this->upsertSource($source)->fresh();
         $command = $parser->parse($this->event);
 
-        if (! $chatSource->is_collecting && $this->isAwaitingImsConfirmation($chatSource)) {
+        if ($this->isAwaitingImsConfirmation($chatSource)) {
             if ($this->handleConfirmationReply($chatSource, $source, $parser, $formProcessor, $messagingClient)) {
                 return;
             }
@@ -187,23 +188,19 @@ class ProcessLineWebhookEvent implements ShouldQueue
         if ($pendingMessage !== null) {
             $this->storePendingInitialMessage($chatSource, $pendingMessage);
             $chatSource->refresh();
+        } elseif (! $this->isAwaitingImsConfirmation($chatSource)) {
+            $this->setAwaitingImsConfirmation($chatSource);
+            $chatSource->refresh();
+        }
+
+        if ($chatSource->is_collecting) {
+            $chatSource->update(['is_collecting' => false]);
+            $chatSource->refresh();
         }
 
         $prompt = $pendingMessage !== null
             ? 'ได้รับข้อความแล้ว ต้องการสร้าง IMS หรือไม่? ตอบว่า สร้าง หรือ ไม่สร้าง'
             : 'ต้องการสร้าง IMS หรือไม่? ตอบว่า สร้าง หรือ ไม่สร้าง';
-
-        if ($this->isAwaitingImsConfirmation($chatSource)) {
-            $messagingClient->notifyChat(
-                $source['id'],
-                $prompt,
-                $this->event['replyToken'] ?? null,
-            );
-
-            return;
-        }
-
-        $this->setAwaitingImsConfirmation($chatSource);
 
         $messagingClient->notifyChat(
             $source['id'],
@@ -229,8 +226,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
         $confirmation = $parser->parseConfirmationReply((string) ($this->event['message']['text'] ?? ''));
 
         if ($confirmation === LineCommandParser::CONFIRM_CREATE) {
-            $pendingMessage = $this->takePendingInitialMessage($chatSource);
-            $this->clearAwaitingImsConfirmation($chatSource);
+            $pendingMessage = $this->consumeConfirmationState($chatSource);
 
             $chatSource->update([
                 'is_collecting' => true,
@@ -240,15 +236,30 @@ class ProcessLineWebhookEvent implements ShouldQueue
                 'stopped_at' => null,
             ]);
 
-            $formProcessor->initializeForm($chatSource->fresh());
-
-            if ($pendingMessage !== null) {
-                $this->processPendingInitialMessage($chatSource->fresh(), $formProcessor, $pendingMessage);
-            }
-
             $intro = $pendingMessage !== null
                 ? 'กำลังเก็บข้อมูล บันทึกรายละเอียดที่แจ้งมาแล้ว แจ้งเพิ่มเติมได้เลย'
                 : 'กำลังเก็บข้อมูล แจ้งรายละเอียดเข้ามาได้เลย';
+
+            try {
+                $formProcessor->initializeForm($chatSource->fresh());
+
+                if ($pendingMessage !== null) {
+                    $this->processPendingInitialMessage($chatSource->fresh(), $formProcessor, $pendingMessage);
+                }
+            } catch (\Throwable $exception) {
+                Log::error('LINE IMS confirmation start failed.', [
+                    'line_chat_source_id' => $chatSource->id,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                $messagingClient->notifyChat(
+                    $source['id'],
+                    'ไม่สามารถเริ่มเก็บข้อมูลได้: เกิดข้อผิดพลาดภายในระบบ',
+                    $this->event['replyToken'] ?? null,
+                );
+
+                return true;
+            }
 
             $messagingClient->notifyChat(
                 $source['id'],
@@ -264,8 +275,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
         }
 
         if ($confirmation === LineCommandParser::DECLINE_CREATE) {
-            $this->clearPendingInitialMessage($chatSource);
-            $this->clearAwaitingImsConfirmation($chatSource);
+            $this->consumeConfirmationState($chatSource);
 
             $messagingClient->notifyChat(
                 $source['id'],
@@ -298,19 +308,19 @@ class ProcessLineWebhookEvent implements ShouldQueue
         $chatSource->update(['form_state' => $formState]);
     }
 
-    private function clearAwaitingImsConfirmation(LineChatSource $chatSource): void
+    private function consumeConfirmationState(LineChatSource $chatSource): ?string
     {
+        $chatSource->refresh();
         $formState = $chatSource->form_state ?? [];
+        $message = trim((string) ($formState['pending_initial_message'] ?? ''));
 
-        if (! array_key_exists('awaiting_ims_confirmation', $formState)) {
-            return;
-        }
-
-        unset($formState['awaiting_ims_confirmation']);
+        unset($formState['awaiting_ims_confirmation'], $formState['pending_initial_message']);
 
         $chatSource->update([
             'form_state' => $formState === [] ? null : $formState,
         ]);
+
+        return $message !== '' ? $message : null;
     }
 
     private function storePendingInitialMessage(LineChatSource $chatSource, string $message): void
@@ -320,39 +330,6 @@ class ProcessLineWebhookEvent implements ShouldQueue
         $formState['awaiting_ims_confirmation'] = true;
 
         $chatSource->update(['form_state' => $formState]);
-    }
-
-    private function takePendingInitialMessage(LineChatSource $chatSource): ?string
-    {
-        $formState = $chatSource->form_state ?? [];
-        $message = trim((string) ($formState['pending_initial_message'] ?? ''));
-
-        if ($message === '') {
-            return null;
-        }
-
-        unset($formState['pending_initial_message']);
-
-        $chatSource->update([
-            'form_state' => $formState === [] ? null : $formState,
-        ]);
-
-        return $message;
-    }
-
-    private function clearPendingInitialMessage(LineChatSource $chatSource): void
-    {
-        $formState = $chatSource->form_state ?? [];
-
-        if (! array_key_exists('pending_initial_message', $formState)) {
-            return;
-        }
-
-        unset($formState['pending_initial_message']);
-
-        $chatSource->update([
-            'form_state' => $formState === [] ? null : $formState,
-        ]);
     }
 
     private function processPendingInitialMessage(

@@ -47,7 +47,7 @@ class LineCommandParser
             }
         }
 
-        $commandText = $this->normalizedCommandText($text);
+        $commandText = $this->normalizedCommandText((string) ($message['text'] ?? ''), $message);
 
         foreach (['เสร็จสิ้น', 'เสร็จแล้ว', 'ยืนยัน'] as $command) {
             if ($commandText === $command || str_contains($commandText, $command)) {
@@ -72,7 +72,7 @@ class LineCommandParser
 
     public function parseConfirmationReply(string $text): ?string
     {
-        $normalized = mb_strtolower(trim($text));
+        $normalized = mb_strtolower(trim($this->stripMentionPrefix($text)));
 
         if ($normalized === 'สร้าง') {
             return self::CONFIRM_CREATE;
@@ -100,7 +100,7 @@ class LineCommandParser
             return null;
         }
 
-        return $this->stripMentionPrefix((string) ($message['text'] ?? ''));
+        return $this->stripMentionsFromText((string) ($message['text'] ?? ''), $message);
     }
 
     public function pendingInitialMessageFromBody(string $body): ?string
@@ -136,9 +136,55 @@ class LineCommandParser
         return ['เรื่อง', 'title', 'ลิงก์', 'link', 'url', 'ความเร่งด่วน', 'priority', 'รายละเอียด', 'detail', 'comment'];
     }
 
-    private function normalizedCommandText(string $text): string
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    private function normalizedCommandText(string $text, array $message): string
     {
-        return mb_strtolower($this->stripMentionPrefix($text));
+        return mb_strtolower($this->stripMentionsFromText($text, $message));
+    }
+
+    /**
+     * @param  array<string, mixed>  $message
+     */
+    private function stripMentionsFromText(string $text, array $message): string
+    {
+        $mentionees = $message['mention']['mentionees'] ?? [];
+
+        if (! is_array($mentionees) || $mentionees === []) {
+            return trim($this->stripMentionPrefix($text));
+        }
+
+        $spans = [];
+
+        foreach ($mentionees as $mentionee) {
+            if (! is_array($mentionee)) {
+                continue;
+            }
+
+            $index = (int) ($mentionee['index'] ?? -1);
+            $length = (int) ($mentionee['length'] ?? 0);
+
+            if ($index < 0 || $length <= 0) {
+                continue;
+            }
+
+            $spans[] = ['index' => $index, 'length' => $length];
+        }
+
+        if ($spans === []) {
+            return trim($this->stripMentionPrefix($text));
+        }
+
+        usort($spans, static fn (array $left, array $right): int => $right['index'] <=> $left['index']);
+
+        foreach ($spans as $span) {
+            $text = mb_substr($text, 0, $span['index']).mb_substr($text, $span['index'] + $span['length']);
+        }
+
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+
+        return $text;
     }
 
     private function stripMentionPrefix(string $text): string
