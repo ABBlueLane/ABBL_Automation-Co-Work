@@ -16,12 +16,19 @@ class IssueCommentControllerTest extends TestCase
     public function test_it_returns_issue_comments_for_modal(): void
     {
         $user = User::factory()->create();
-        $business = Business::create([
-            'business_name' => 'Test Business',
-            'business_code' => 'TBIZ',
-            'business_status' => 1,
-            'allow_issue' => 1,
-        ]);
+        $business = Business::unguarded(function () {
+            return Business::create([
+                'business_type' => 1,
+                'business_vat_status' => 1,
+                'business_branch_status' => 1,
+                'business_account_finance_year' => 12,
+                'business_business_finance_year' => 12,
+                'business_name' => 'Test Business',
+                'business_code' => 'TBIZ',
+                'business_status' => 1,
+                'allow_issue' => 1,
+            ]);
+        });
 
         $issue = Issue::create([
             'business_id' => $business->id,
