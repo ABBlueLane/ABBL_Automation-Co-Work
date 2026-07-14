@@ -208,7 +208,7 @@
                 <div class="navbar-header">
                     <div class="d-flex">
                         <div class="navbar-brand-box horizontal-logo">
-                            <a href="{{ route('api_clients.index') }}" class="logo logo-dark">
+                            <a href="{{ route('dashboard') }}" class="logo logo-dark">
                                 <span class="logo-sm">
                                     <img src="{{ asset('images/icon.ico') }}" alt="" height="22">
                                 </span>
@@ -216,7 +216,7 @@
                                     <img src="{{ asset('images/black-logo-bluelane.webp') }}" alt="" height="22">
                                 </span>
                             </a>
-                            <a href="{{ route('api_clients.index') }}" class="logo logo-light">
+                            <a href="{{ route('dashboard') }}" class="logo logo-light">
                                 <span class="logo-sm">
                                     <img src="{{ asset('images/icon.ico') }}" alt="" height="22">
                                 </span>
@@ -250,7 +250,7 @@
 
         <div class="app-menu navbar-menu">
             <div class="navbar-brand-box">
-                <a href="{{ route('api_clients.index') }}" class="logo logo-dark">
+                <a href="{{ route('dashboard') }}" class="logo logo-dark">
                     <span class="logo-sm">
                         <img src="{{ asset('images/icon.ico') }}" alt="" height="22">
                     </span>
@@ -258,7 +258,7 @@
                         <img src="{{ asset('images/white-logo-bluelane.webp') }}" alt="" height="22">
                     </span>
                 </a>
-                <a href="{{ route('api_clients.index') }}" class="logo logo-light">
+                <a href="{{ route('dashboard') }}" class="logo logo-light">
                     <span class="logo-sm">
                         <img src="{{ asset('images/icon.ico') }}" alt="" height="22">
                     </span>
@@ -276,6 +276,11 @@
                     <div id="two-column-menu"></div>
                     <ul class="navbar-nav" id="navbar-nav">
                         <li class="menu-title"><span>Menu</span></li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                                <i class="ri-dashboard-line"></i> <span>Dashboard</span>
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link menu-link {{ request()->routeIs('api_clients.*') ? 'active' : 'collapsed' }}" href="#sidebarSettings" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('api_clients.*') ? 'true' : 'false' }}" aria-controls="sidebarSettings">
                                 <i class="ri-settings-3-line"></i> <span>ตั้งค่า</span>
@@ -299,7 +304,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('business.select') || request()->routeIs('issue.*') || request()->routeIs('office.issue.*') ? 'active' : '' }}" href="{{ route('business.select') }}">
+                            <a class="nav-link menu-link {{ request()->routeIs('admin.issues.*') ? 'active' : '' }}" href="{{ route('admin.issues.index') }}">
                                 <i class="ri-bug-line"></i> <span>Issue Management</span>
                             </a>
                         </li>

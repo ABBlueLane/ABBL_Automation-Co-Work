@@ -23,7 +23,7 @@ class AuthTest extends TestCase
         $this->post(route('login.submit'), [
             'login' => 'admin@example.com',
             'password' => 'secret123',
-        ])->assertRedirect(route('api_clients.index'));
+        ])->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
     }
@@ -40,7 +40,7 @@ class AuthTest extends TestCase
         $this->post(route('login.submit'), [
             'login' => '0812345678',
             'password' => 'secret123',
-        ])->assertRedirect(route('api_clients.index'));
+        ])->assertRedirect(route('dashboard'));
 
         $this->assertAuthenticatedAs($user);
     }

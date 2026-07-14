@@ -2,7 +2,9 @@
 
 namespace App\Services\Line\Ims;
 
+use App\Models\Business;
 use App\Models\Issue;
+use App\Models\User;
 use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
 use App\Models\LineImsSubmission;
@@ -101,7 +103,7 @@ class LineImsFormProcessor
 
     public function initializeForm(LineChatSource $chatSource): LineChatSource
     {
-        $businessId = config('services.line.ims.default_business_id');
+        $businessId = $this->resolvedBusinessId();
         $formState = LineChatSource::defaultIssueCreateFormState();
 
         $chatSource->update([
@@ -112,7 +114,7 @@ class LineImsFormProcessor
         ]);
 
         $draft = $this->submissionService->createOrUpdateDraft(
-            (string) $businessId,
+            $businessId,
             $this->systemUserId(),
             $this->draftPayloadFromFormState($formState),
         );
@@ -537,6 +539,33 @@ class LineImsFormProcessor
 
     private function systemUserId(): int
     {
+        $this->assertImsPrerequisites();
+
         return (int) config('services.line.ims.system_user_id');
+    }
+
+    private function resolvedBusinessId(): string
+    {
+        $this->assertImsPrerequisites();
+
+        return trim((string) config('services.line.ims.default_business_id'));
+    }
+
+    private function assertImsPrerequisites(): void
+    {
+        $businessId = trim((string) config('services.line.ims.default_business_id'));
+        $systemUserId = (int) config('services.line.ims.system_user_id');
+
+        if ($businessId === '' || $systemUserId <= 0) {
+            throw new \RuntimeException('LINE IMS is not configured (missing business id or system user id).');
+        }
+
+        if (! Business::query()->whereKey($businessId)->exists()) {
+            throw new \RuntimeException("LINE IMS business not found: {$businessId}");
+        }
+
+        if (! User::query()->whereKey($systemUserId)->exists()) {
+            throw new \RuntimeException("LINE IMS system user not found: {$systemUserId}");
+        }
     }
 }
