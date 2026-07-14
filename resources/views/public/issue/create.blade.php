@@ -420,11 +420,11 @@
             padding-left: 44px !important;
         }
 
-        /* Sticky Footer Bar */
+        /* Sticky Footer Bar — align with Velzon main-content (not under sidebar) */
         .form-footer-bar {
             position: fixed;
             bottom: 0;
-            left: 0;
+            left: var(--vz-vertical-menu-width, 250px);
             right: 0;
             background-color: #ffffff;
             border-top: 1px solid #e2e8f0;
@@ -434,6 +434,11 @@
             z-index: 1000;
             box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.03);
             height: 72px;
+        }
+        @media (max-width: 767.98px) {
+            .form-footer-bar {
+                left: 0;
+            }
         }
         .btn-cancel {
             background-color: #e2e8f0;
