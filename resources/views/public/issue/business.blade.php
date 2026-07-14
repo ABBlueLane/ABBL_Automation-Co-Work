@@ -1,4 +1,6 @@
 @extends('layouts.public')
+@section('title', 'Select Business | OneClick')
+@section('navbar_container', 'container')
 
 @section('content')
     <div class="container py-5">
