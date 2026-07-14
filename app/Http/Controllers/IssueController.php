@@ -726,7 +726,7 @@ class IssueController extends Controller
     protected function formatIssueCardData(Issue $issue): array
     {
         $latestComment = $issue->relationLoaded('comments') ? $issue->comments->first() : null;
-        $viewUrl = route('office.issue.view', ['business' => $issue->business_id, 'id' => $issue->id]);
+        $viewUrl = route('issue.view', [$issue->business_id, $issue->id]);
 
         return [
             'id' => $issue->id,
