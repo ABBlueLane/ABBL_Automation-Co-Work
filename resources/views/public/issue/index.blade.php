@@ -12,7 +12,6 @@
 
 @section('content')
     <div class="container-fluid py-4">
-<<<<<<< HEAD
         {{-- Header Section --}}
         <div class="d-flex align-items-center mb-4 flex-wrap gap-3">
             <h4 class="mb-0 flex-grow-1 fw-bold text-dark" style="font-size: 1.4rem;">
@@ -80,80 +79,6 @@
                     </div>
                 </div>
                 
-=======
-        <div class="row mb-3">
-            <div class="col-12">
-                <ol class="breadcrumb m-0">
-                    <li class="breadcrumb-item">
-                        <a href="{{ route('business.select') }}">เลือกธุรกิจ</a>
-                    </li>
-                    <li class="breadcrumb-item active" aria-current="page">
-                        ระบบจัดการปัญหา
-                    </li>
-                </ol>
-            </div>
-        </div>
-
-        {{-- Header Section --}}
-        <div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-3 issue-page-header">
-            <div class="page-heading">
-                <h1 class="mb-1 fw-bold text-dark" style="font-size: 1.75rem;">
-                    จัดการปัญหา
-                </h1>
-                <p class="mb-0 text-muted" style="font-size: 0.98rem;">
-                    จัดการและติดตามปัญหาธุรกิจทั้งหมดอย่างมีประสิทธิภาพ
-                </p>
-            </div>
-            <div class="flex-shrink-0 ms-auto">
-                <a href="{{ route('issue.create', $business) }}" class="btn btn-primary rounded-pill d-flex align-items-center gap-2 px-4 py-2 shadow-sm">
-                    <i class="ri-add-line align-bottom fs-5"></i>
-                     สร้าง Issue
-                </a>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-12">
-                {{-- Filter Section --}}
-                <div class="border rounded-4 p-4 mb-4 bg-white shadow-sm issue-filter-card">
-                    <div class="row g-3 align-items-center">
-                        <div class="col-lg-12">
-                            <div class="d-flex flex-wrap align-items-center gap-2">
-                                <div class="position-relative issue-search-input flex-grow-1 min-w-0">
-                                    <i class="ri-search-line position-absolute top-50 translate-middle-y" style="left: 1rem; color: #cbd5e1; font-size: 1.15rem; z-index: 4;"></i>
-                                    <input type="text" class="form-control" id="qt_wording" placeholder="ค้นหาชื่อโปรเจกต์ หรือ รหัส Issue..." style="padding-left: 2.75rem;">
-                                </div>
-                                <button class="btn btn-outline-secondary issue-reset-link px-4 py-2" type="button" onclick="resetFilter();">
-                                    รีเซ็ตตัวกรอง
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="d-flex align-items-center flex-wrap gap-3">
-                                
-                                <div class="d-flex issue-filter-buttons flex-wrap gap-2">
-                                    <input type="hidden" id="qt_priority" value="">
-                                    <button type="button" class="btn btn-outline-secondary btn-priority-filter active" data-priority="">
-                                        ทั้งหมด
-                                    </button>
-                                    <button type="button" class="btn btn-outline-danger btn-priority-filter" data-priority="high">
-                                        สูง
-                                    </button>
-                                    <button type="button" class="btn btn-outline-warning btn-priority-filter" data-priority="medium">
-                                        กลาง
-                                    </button>
-                                    <button type="button" class="btn btn-outline-success btn-priority-filter" data-priority="low">
-                                        ต่ำ
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                 {{-- Loading --}}
                 <div class="text-center py-5" id="showLoading">
                     <div class="spinner-border text-primary mb-2" role="status"></div>
@@ -186,13 +111,8 @@
         let currentPage = 1;
         const itemsPerPage = 6;
         let activeIssueId = null;
-<<<<<<< HEAD
         const commentsUrlTemplate = "{{ route('issue.comments.index', ['issue' => '__ISSUE_ID__']) }}";
         const commentStoreUrlTemplate = "{{ route('issue.comment.store', ['issue' => '__ISSUE_ID__']) }}";
-=======
-        const commentsUrlTemplate = "{{ route('issue.comments.index', [$business, '__ISSUE_ID__']) }}";
-        const commentStoreUrlTemplate = "{{ route('issue.comment.store', [$business, '__ISSUE_ID__']) }}";
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, function(match) {
@@ -219,7 +139,6 @@
                     reloadCards();
                 }
             });
-<<<<<<< HEAD
             $("#qt_status").on('change select2:select select2:unselect', reloadCards);
 
             $('.btn-priority-filter').on('click', function() {
@@ -229,38 +148,16 @@
                 if (currentPriority === clickedPriority) {
                     $('#qt_priority').val('');
                     $('.btn-priority-filter').removeClass('active');
-=======
-            $('.btn-priority-filter').on('click', function() {
-                let clickedPriority = $(this).data('priority');
-                let currentPriority = $('#qt_priority').val();
-
-                if (clickedPriority === '') {
-                    $('#qt_priority').val('');
-                    $('.btn-priority-filter').removeClass('active');
-                    $(this).addClass('active');
-                } else if (currentPriority === clickedPriority) {
-                    $('#qt_priority').val('');
-                    $('.btn-priority-filter').removeClass('active');
-                    $('[data-priority=""]').addClass('active');
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                 } else {
                     $('#qt_priority').val(clickedPriority);
                     $('.btn-priority-filter').removeClass('active');
                     $(this).addClass('active');
                 }
-<<<<<<< HEAD
                 
                 reloadCards();
             });
 
             // จัดการเมื่อกดปุ่ม "ดูรายละเอียด" ให้เปิดหน้า detail โดยตรง
-=======
-
-                reloadCards();
-            });
-
-            // จัดการเมื่อกดปุ่ม "ดูรายละเอียด" ให้ไปยังหน้าดูรายละเอียดทันที
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             $(document).on('click', '.issue-view-btn', function(e) {
                 e.preventDefault();
                 const targetUrl = $(this).data('url') || '#';
@@ -269,11 +166,7 @@
                 }
             });
 
-<<<<<<< HEAD
             // จัดการเมื่อกดปุ่ม "แก้ไข" ให้เปิดหน้าแก้ไขหรือหน้า detail โดยตรง
-=======
-            // จัดการเมื่อกดปุ่ม "แก้ไข" ให้ไปยังหน้าฟอร์มแก้ไขทันที
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             $(document).on('click', '.issue-edit-btn', function(e) {
                 e.preventDefault();
                 const targetUrl = $(this).data('url') || '#';
@@ -282,20 +175,6 @@
                 }
             });
 
-<<<<<<< HEAD
-=======
-            // จัดการคลิกที่ตัวการ์ดเพื่อดูรายละเอียด
-            $(document).on('click', '.issue-card', function(e) {
-                if ($(e.target).closest('button, a').length > 0) {
-                    return;
-                }
-                const targetUrl = $(this).data('view-url');
-                if (targetUrl && targetUrl !== '#') {
-                    window.location.href = targetUrl;
-                }
-            });
-
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             $(document).on('click', '.issue-comment-btn', function() {
                 activeIssueId = $(this).data('issue-id');
                 $('#commentList').html('<div class="issue-comment-empty">กำลังโหลดความคิดเห็น...</div>');
@@ -380,18 +259,11 @@
             let startRow = (currentPage - 1) * itemsPerPage;
 
             $.ajax({
-<<<<<<< HEAD
                 url: "{{ route('issue.table') }}",
                 type: "GET",
                 data: {
                     wording: $("#qt_wording").val(),
                     status: $("#qt_status").val(),
-=======
-                url: "{{ route('issue.table', $business) }}",
-                type: "GET",
-                data: {
-                    wording: $("#qt_wording").val(),
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                     priority: $("#qt_priority").val(),
                     draw: 1,
                     start: startRow,
@@ -439,7 +311,6 @@
 
                             let currentStatus = (item.status || 'pending').toString().toLowerCase().trim();
                             let statusMeta = {
-<<<<<<< HEAD
                                 'draft': {
                                     label: 'แบบร่าง',
                                     bg: 'background-color: #6c757d; color: #fff;',
@@ -481,42 +352,6 @@
                                     step: 3,
                                     linePercent: 100,
                                     displayPercent: 100
-=======
-                                'pending': {
-                                    label: 'รอรีวิว',
-                                    bg: 'background-color: #f59e0b; color: #fff;',
-                                    step: 0,
-                                    linePercent: 0,
-                                    progressColor: '#f59e0b'
-                                },
-                                'in_progress': {
-                                    label: 'กำลังดำเนินการ',
-                                    bg: 'background-color: #3b82f6; color: #fff;',
-                                    step: 1,
-                                    linePercent: 25,
-                                    progressColor: '#3b82f6'
-                                },
-                                'waiting_review': {
-                                    label: 'รอตรวจ',
-                                    bg: 'background-color: #14b8a6; color: #fff;',
-                                    step: 2,
-                                    linePercent: 50,
-                                    progressColor: '#14b8a6'
-                                },
-                                'customer_replied': {
-                                    label: 'ลูกค้าตอบกลับ',
-                                    bg: 'background-color: #8b5cf6; color: #fff;',
-                                    step: 3,
-                                    linePercent: 75,
-                                    progressColor: '#8b5cf6'
-                                },
-                                'done': {
-                                    label: 'ดำเนินการแล้ว',
-                                    bg: 'background-color: #16a34a; color: #fff;',
-                                    step: 4,
-                                    linePercent: 100,
-                                    progressColor: '#16a34a'
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                 }
                             };
 
@@ -526,16 +361,12 @@
                             let stepIndex = statusInfo.step;
                             let linePercent = statusInfo.linePercent;
 
-<<<<<<< HEAD
                             let progressColor = '#dc3545'; 
                             if (statusInfo.displayPercent === 50 || statusInfo.displayPercent === 75) {
                                 progressColor = '#ffc107'; 
                             } else if (statusInfo.displayPercent === 100) {
                                 progressColor = '#198754'; 
                             }
-=======
-                            let progressColor = statusInfo.progressColor;
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
 
                             let rawAssignee = item.assigned_to || '';
                             let assigneeHtml = '';
@@ -570,11 +401,7 @@
 
                             let cardHtml = `
                                 <div class="col-xl-4 col-md-6 col-12">
-<<<<<<< HEAD
                                     <div class="card h-100 issue-card">
-=======
-                                    <div class="card h-100 issue-card" data-view-url="${targetUrl}">
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                         <div class="issue-card-header d-flex justify-content-between align-items-start">
                                             <div class="issue-card-title-wrap">
                                                 <a href="${targetUrl}" class="issue-number-link" onclick="event.stopPropagation();">#${escapeHtml(item.issue_number || 'ABBL-IMS-000001')}</a>
@@ -584,10 +411,7 @@
                                                     <span>เพิ่มเมื่อ ${escapeHtml(item.created_at_formatted || '-')}</span>
                                                 </div>
                                             </div>
-<<<<<<< HEAD
                                             <!-- 🎯 เพิ่มคุณสมบัติ data-bs-toggle="tooltip" เพื่อทำกล่องข้อความเวลาเมาส์ชี้ -->
-=======
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                             <div class="d-flex gap-1">
                                                 <button type="button" class="btn btn-outline-secondary btn-sm px-2 issue-view-btn" data-url="${targetUrl}" data-bs-toggle="tooltip" data-bs-placement="top" title="ดูรายละเอียด">
                                                     <i class="ri-eye-line"></i> 
@@ -598,35 +422,21 @@
                                             </div>
                                         </div>
                                         
-<<<<<<< HEAD
                                         <div class="card-body issue-card-body d-flex flex-column justify-content-between pt-2 pb-3" style="cursor: default;">
-=======
-                                        <div class="card-body issue-card-body d-flex flex-column justify-content-between pt-2 pb-3">
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                             <div class="mb-3">
                                                 <h5 class="issue-card-title text-truncate">${escapeHtml(item.title_plain || 'ไม่มีหัวข้อ')}</h5>
                                                 <p class="issue-card-description text-truncate-2-lines">${escapeHtml(item.description || 'รายละเอียดปัญหา...')}</p>
                                             </div>
                                             
                                             <div>
-<<<<<<< HEAD
                                                 <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom border-dashed" style="border-color: #ebebeb !important;">
-=======
-                                                {{-- 🎯 ถอดคลาสกรอบขีด ๆ (border-bottom border-dashed) ออกตามบรีฟ --}}
-                                                <div class="d-flex justify-content-between align-items-center mb-2 pb-2">
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                                     <span class="small text-muted"><i class="ri-alert-line me-1" style="color: ${priorityBorderColor};"></i> ระดับความเร่งด่วน:</span>
                                                     <span class="badge rounded px-2 py-1" style="background-color: ${priorityBg}; color: ${priorityTextColor}; border: 1px solid ${priorityBorderColor}40; font-size: 0.75rem; font-weight: 600;">
                                                         ${priorityText}
                                                     </span>
                                                 </div>
 
-<<<<<<< HEAD
                                                 <div class="d-flex align-items-center gap-1 mb-2 pb-2 border-bottom border-dashed" style="border-color: #f1f1f1 !important;">
-=======
-                                                {{-- 🎯 ถอดคลาสกรอบขีด ๆ (border-bottom border-dashed) ออกตามบรีฟ --}}
-                                                <div class="d-flex align-items-center gap-1 mb-2 pb-2">
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                                     <span class="small text-muted">ผู้รับผิดชอบ:</span>
                                                     <span class="small">${assigneeHtml}</span>
                                                 </div>
@@ -643,25 +453,11 @@
                                                 <div class="position-relative d-flex justify-content-between align-items-center my-3 mx-1" style="height: 20px;">
                                                     <div class="position-absolute start-0 end-0" style="height: 4px; background-color: #e9ecef; top: 50%; transform: translateY(-50%); z-index: 1; border-radius: 2px;"></div>
                                                     <div class="position-absolute start-0" style="height: 4px; width: ${linePercent}%; background-color: ${progressColor}; top: 50%; transform: translateY(-50%); z-index: 2; transition: width 0.4s ease; border-radius: 2px;"></div>
-<<<<<<< HEAD
                                                     
                                                     <div class="rounded-circle border" style="width: 12px; height: 12px; background-color: ${stepIndex >= 0 ? progressColor : '#fff'}; border-color: ${stepIndex >= 0 ? progressColor : '#ced4da'} !important; z-index: 3; transition: all 0.3s ease;"></div>
                                                     <div class="rounded-circle border" style="width: 12px; height: 12px; background-color: ${stepIndex >= 1 ? progressColor : '#fff'}; border-color: ${stepIndex >= 1 ? progressColor : '#ced4da'} !important; z-index: 3; transition: all 0.3s ease;"></div>
                                                     <div class="rounded-circle border" style="width: 12px; height: 12px; background-color: ${stepIndex >= 2 ? progressColor : '#fff'}; border-color: ${stepIndex >= 2 ? progressColor : '#ced4da'} !important; z-index: 3; transition: all 0.3s ease;"></div>
                                                     <div class="rounded-circle border" style="width: 12px; height: 12px; background-color: ${stepIndex >= 3 ? progressColor : '#fff'}; border-color: ${stepIndex >= 3 ? progressColor : '#ced4da'} !important; z-index: 3; transition: all 0.3s ease;"></div>
-=======
-                                                    ${(() => {
-                                                        let dots = '';
-                                                        for (let idx = 0; idx < 5; idx++) {
-                                                            const active = stepIndex >= idx;
-                                                            const dotColor = active ? progressColor : '#fff';
-                                                            const dotBorder = active ? progressColor : '#ced4da';
-                                                            dots += `
-                                                                <div class="rounded-circle border" style="width: 12px; height: 12px; background-color: ${dotColor}; border-color: ${dotBorder} !important; z-index: 3; transition: all 0.3s ease;"></div>`;
-                                                        }
-                                                        return dots;
-                                                    })()}
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                                 </div>
 
                                                 ${commentPreviewHtml}
@@ -679,10 +475,7 @@
                             container.append(cardHtml);
                         });
 
-<<<<<<< HEAD
                         // 🎯 เปิดเรียกใช้งาน Tooltip หลังจากสร้าง HTML ของการ์ดเสร็จสิ้น
-=======
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
                         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                             return new bootstrap.Tooltip(tooltipTriggerEl)
@@ -776,15 +569,9 @@
 
         function resetFilter() {
             $("#qt_wording").val('');
-<<<<<<< HEAD
             $("#qt_status").val('').trigger('change');
             $('#qt_priority').val('');
             $('.btn-priority-filter').removeClass('active');
-=======
-            $('#qt_priority').val('');
-            $('.btn-priority-filter').removeClass('active');
-            $('[data-priority=""]').addClass('active');
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             reloadCards();
         }
     </script>
@@ -853,19 +640,6 @@
 
 @section('style')
     <style>
-<<<<<<< HEAD
-=======
-        .issue-card {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .issue-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
-            border-color: #cbd5e1;
-        }
-        
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
         .pagination .page-link {
             border-radius: 4px !important;
             box-shadow: none !important;
@@ -924,72 +698,5 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
         }
-<<<<<<< HEAD
-=======
-        
-        /* สไตล์เสริมเพื่อให้การแสดงผลไอคอนและคำค้นหาสมดุลกัน */
-        .issue-search-input {
-            position: relative;
-            border-radius: 1rem;
-            background: #f8fafc;
-            border: 1px solid #d1d5db;
-            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
-            padding: 0.35rem 0.75rem;
-        }
-        .issue-search-input i {
-            pointer-events: none;
-            color: #6b7280;
-            left: 1rem;
-        }
-        .issue-search-input input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: #111827;
-            border-radius: 0.75rem;
-            padding: 0.95rem 1rem 0.95rem 2.75rem;
-            box-shadow: none;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        .issue-search-input input:focus {
-            outline: none;
-            background: transparent;
-            color: #111827;
-        }
-        .issue-search-input input::placeholder {
-            color: #9ca3af;
-        }
-        .issue-search-input:focus-within {
-            border-color: #9ca3af;
-            box-shadow: 0 0 0 0.08rem rgba(156, 163, 175, 0.25);
-        }
-        .issue-reset-link {
-            border-radius: 0.9rem;
-            background: transparent;
-            color: #111827;
-            border: none;
-            font-weight: 600;
-            text-transform: none;
-            padding: 0.8rem 1rem;
-            transition: color 0.2s ease, background-color 0.2s ease;
-        }
-        .issue-reset-link:hover,
-        .issue-reset-link:focus {
-            background-color: rgba(15, 23, 42, 0.04);
-            color: #111827;
-            text-decoration: none;
-        }
-        .issue-reset-link:hover,
-        .issue-reset-link:focus {
-            background-color: #e2e8f0;
-            border-color: #94a3b8;
-            color: #111827;
-            transform: translateY(-1px);
-        }
-        .issue-reset-link:active {
-            background-color: #cbd5e1;
-            border-color: #7c93ae;
-        }
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
     </style>
 @endsection

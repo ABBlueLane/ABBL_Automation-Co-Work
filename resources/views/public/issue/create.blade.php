@@ -630,11 +630,7 @@
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ route('business.select') }}">ธุรกิจ</a></li>
-<<<<<<< HEAD
                         <li class="breadcrumb-item"><a href="{{ route('issue.index') }}">จัดการปัญหา</a></li>
-=======
-                        <li class="breadcrumb-item"><a href="{{ route('issue.index', $business) }}">จัดการปัญหา</a></li>
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                         <li class="breadcrumb-item active" aria-current="page">แจ้งปัญหา</li>
                     </ol>
                 </nav>
@@ -712,7 +708,6 @@
 
                             {{-- โปรเจค --}}
                             <div class="col-md-4">
-<<<<<<< HEAD
                                 <label class="field-label">โปรเจค <span class="text-danger">*</span></label>
                                 @php
                                     $currentBusiness = \App\Models\Business::find($business);
@@ -721,13 +716,6 @@
                                         $issue?->issue_project_id
                                             ?? optional($issueProjects->firstWhere('name', $currentBusiness?->business_name))->id
                                             ?? ''
-=======
-                                <label class="field-label">โปรเจค</label>
-                                @php
-                                    $selectedIssueProjectId = old(
-                                        'issue_project_id',
-                                        $issue?->issue_project_id ?? ''
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                                     );
                                 @endphp
                                 <select name="issue_project_id" id="issue_project_id" class="input-clean select-clean">
@@ -807,11 +795,7 @@
                     </div>
                     <div id="step3DetailBody" class="mt-4"></div>
                     <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-<<<<<<< HEAD
                         <a href="{{ route('issue.index') }}" class="btn btn-cancel">
-=======
-                        <a href="{{ route('issue.index', $business) }}" class="btn btn-cancel">
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                             <i class="ri-list-check me-2"></i> กลับหน้ารายการ
                         </a>
                         <a href="#" class="btn btn-continue" id="viewIssueBtn">
@@ -828,11 +812,7 @@
         <div class="container d-flex align-items-center justify-content-between">
             <!-- Step 1 Actions -->
             <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
-<<<<<<< HEAD
                 <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
-=======
-                <a href="{{ route('issue.index', $business) }}" class="btn btn-cancel">ยกเลิก</a>
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                 <span class="text-save-draft text-muted">กด Ctrl+S เพื่อบันทึกแบบร่าง</span>
                 <button type="button" class="btn btn-continue" id="reviewBtn">
                     ถัดไป <i class="ri-arrow-right-line ms-2"></i>
@@ -858,15 +838,9 @@
         let existingFiles = @json($issue?->firstComment->files ?? []);
         let originalComment = @json($issue?->firstComment->comment ?? '');
         const isDuplicateTemplate = @json($isDuplicateTemplate ?? false);
-<<<<<<< HEAD
         const previewUrl = "{{ route('issue.preview') }}";
         const storeSubmitUrl = "{{ route('issue.store.submit') }}";
         const issueIndexBase = "{{ route('issue.index') }}";
-=======
-        const previewUrl = "{{ route('issue.preview', $business) }}";
-        const storeSubmitUrl = "{{ route('issue.store.submit', $business) }}";
-        const issueIndexBase = "{{ route('issue.index', $business) }}";
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
         const storageBaseUrl = @json(asset('storage'));
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;

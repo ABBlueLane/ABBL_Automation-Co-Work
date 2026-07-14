@@ -2,17 +2,6 @@
 @section('navbar_container', 'container')
 @section('content')
     <style>
-<<<<<<< HEAD
-=======
-        /* ============================================================
-           REVIEW ISSUE REPORT — matched to reference screenshot
-        ============================================================ */
-
-        body, .container.py-4 {
-            background: #f6f7f9;
-        }
-
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
         .btn-copy-link-icon {
             background: none;
             border: none;
@@ -21,28 +10,18 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-<<<<<<< HEAD
             color: #9ca3af;
             font-size: 1.25rem;
-=======
-            color: #b0b5bd;
-            font-size: 1.1rem;
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             cursor: pointer;
             transition: color 0.15s ease, transform 0.15s ease;
         }
         .btn-copy-link-icon:hover {
-<<<<<<< HEAD
             color: #4f46e5;
-=======
-            color: #3762f0;
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
             transform: scale(1.1);
         }
         .btn-copy-link-icon:focus {
             outline: none;
         }
-<<<<<<< HEAD
         .status-timeline-wrap {
             margin-top: 4px;
         }
@@ -140,322 +119,6 @@
                                     </li>
                                 </ol>
                             </div>
-=======
-
-        /* ---------- Outer shell ---------- */
-        .review-shell {
-            background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%);
-            border-radius: 24px;
-            box-shadow: 0 1px 3px rgba(17, 24, 39, .06);
-            padding: 34px 36px;
-            margin-bottom: 24px;
-        }
-
-        .review-header-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-
-        .review-title {
-            font-weight: 800;
-            font-size: 1.85rem;
-            color: #181b21;
-            letter-spacing: -0.01em;
-            margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-        }
-
-        .review-issue-number {
-            color: #9aa1ac;
-            font-size: .85rem;
-            font-weight: 500;
-        }
-
-        /* plain-text nav links (no button chrome) */
-        .review-nav-links {
-            display: flex;
-            align-items: center;
-            gap: 28px;
-            padding-top: 10px;
-            flex-wrap: wrap;
-        }
-        .review-nav-links a,
-        .review-nav-links button {
-            background: none;
-            border: none;
-            color: #6b7280;
-            font-size: .9rem;
-            font-weight: 500;
-            text-decoration: none;
-            padding: 0;
-            white-space: nowrap;
-        }
-        .review-nav-links a:hover,
-        .review-nav-links button:hover {
-            color: #111827;
-        }
-        .review-nav-links .nav-approve-close {
-            color: #111827;
-            font-weight: 600;
-        }
-
-        .review-section-title {
-            font-weight: 700;
-            font-size: 1rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 20px;
-        }
-
-        .review-section-title i {
-            color: #9aa1ac;
-            font-size: 1.05rem;
-        }
-
-        .info-field-label {
-            color: #9aa1ac;
-            font-size: .78rem;
-            margin-bottom: 6px;
-        }
-
-        .info-field-value {
-            color: #1f2937;
-            font-size: .95rem;
-            font-weight: 500;
-        }
-
-        .review-info-block + .review-info-block {
-            margin-top: 22px;
-        }
-
-        .avatar-circle {
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background: #e0e7ff;
-            color: #3762f0;
-            font-size: .75rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .avatar-circle img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* ---------- Priority pill ---------- */
-        .priority-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 14px;
-            border-radius: 999px;
-            font-size: .8rem;
-            font-weight: 700;
-        }
-        .priority-pill-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-
-
-        /* ---------- Details (plain text, no box) ---------- */
-        .review-details-text {
-            color: #374151;
-            font-size: .92rem;
-            line-height: 1.7;
-        }
-
-        /* ---------- Attach panels ---------- */
-        .attach-panel {
-            background: #f0f1f3;
-            border-radius: 18px;
-            padding: 18px;
-            height: 100%;
-        }
-
-        .link-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: .75rem;
-            padding: .75rem 1rem;
-            background: #fff;
-            border: 1px solid #ececef;
-            border-radius: 12px;
-            color: #1f2937;
-            text-decoration: none;
-            font-size: .88rem;
-        }
-        .link-row:hover {
-            background: #fafafb;
-            color: #1f2937;
-        }
-        .link-row + .link-row {
-            margin-top: .55rem;
-        }
-        .link-row .link-row-icon {
-            width: 20px;
-            display: inline-flex;
-            justify-content: center;
-            color: #6b7280;
-        }
-        .link-row .link-row-text {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-            overflow: hidden;
-        }
-
-        .file-card {
-            background: #fff;
-            border: 1px solid #ececef;
-            border-radius: 14px;
-            padding: .7rem .85rem;
-            display: flex;
-            align-items: center;
-            gap: .65rem;
-            height: 100%;
-            text-decoration: none;
-            color: #1f2937;
-        }
-        .file-card:hover {
-            background: #fafafb;
-            color: #1f2937;
-        }
-        .file-card .file-name {
-            font-size: .82rem;
-            font-weight: 600;
-            line-height: 1.25;
-            word-break: break-word;
-        }
-        .file-card .file-meta {
-            font-size: .72rem;
-            color: #9aa1ac;
-            text-transform: uppercase;
-        }
-
-        .file-icon-box {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            flex-shrink: 0;
-        }
-        .file-icon-box.icon-image { background: #eef0ff; color: #5b6bf5; }
-        .file-icon-box.icon-doc   { background: #eaf1ff; color: #3762f0; }
-        .file-icon-box.icon-sheet { background: #e8f8ee; color: #1fa15a; }
-        .file-icon-box.icon-generic { background: #f0f1f3; color: #6b7280; }
-
-        /* ---------- Discussion card ---------- */
-        .review-card {
-            background: #fff;
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
-        }
-
-        .discussion-comment {
-            display: flex;
-            gap: .75rem;
-            padding: 0 0 1.1rem;
-        }
-        .discussion-comment + .discussion-comment {
-            margin-top: .25rem;
-            padding-top: 1.1rem;
-            border-top: 1px solid #f1f3f5;
-        }
-
-        .comment-compose {
-            border: 1px solid #e5e7eb;
-            border-radius: 18px;
-            padding: .85rem 1rem;
-            margin-top: 1.4rem;
-        }
-
-        .comment-compose textarea {
-            border: none;
-            resize: none;
-            box-shadow: none !important;
-            padding: 0;
-            font-size: .9rem;
-        }
-
-        .comment-compose textarea:focus {
-            outline: none;
-        }
-
-        .comment-compose-icon-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: none;
-            background: transparent;
-            color: #9aa1ac;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-        .comment-compose-icon-btn:hover {
-            background: #f4f5f7;
-            color: #374151;
-        }
-
-        .btn-send-pill {
-            background: #3762f0;
-            border-color: #3762f0;
-            border-radius: 999px;
-            padding: .4rem 1.3rem;
-            font-weight: 600;
-        }
-        .btn-send-pill:hover {
-            background: #2c4fd6;
-            border-color: #2c4fd6;
-        }
-
-        .back-to-edit-btn {
-            border-radius: 999px;
-            padding: .55rem 1.4rem;
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            color: #374151;
-            font-weight: 500;
-        }
-        .back-to-edit-btn:hover {
-            background: #f9fafb;
-            color: #374151;
-        }
-    </style>
-
-    <div class="container py-4">
-
-        @if ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id())
-            <div class="alert alert-warning mb-3">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold mb-1">
-                            <i class="ri-eye-line me-1"></i>
-                            รีวิวแบบร่าง
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                         </div>
                         <p class="mb-0 small">
                             ตรวจสอบหัวข้อ รายละเอียด ลิงก์ และไฟล์แนบด้านล่าง — ยังไม่เข้าคิวทีมงานจนกว่าคุณจะกด
@@ -473,7 +136,6 @@
                     </div>
                 </div>
             </div>
-<<<<<<< HEAD
             <div class="col-lg-12">
                 @if ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id())
                     <div class="alert alert-warning mb-3">
@@ -597,69 +259,6 @@
 
                             </div>
 
-=======
-        @endif
-
-        @php
-            $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
-            $issueViewUrl = route('issue.view', [$business, $issue->id]);
-
-            $priorityBadgeStyles = [
-                \App\Models\Issue::PRIORITY_HIGH ?? 'high' => ['label' => 'เร่งด่วน', 'bg' => 'rgba(217,72,72,0.12)', 'color' => '#b83b3b', 'dot' => '#d94848'],
-                \App\Models\Issue::PRIORITY_MEDIUM ?? 'medium' => ['label' => 'ปานกลาง', 'bg' => 'rgba(242,169,59,0.15)', 'color' => '#92620a', 'dot' => '#f2a93b'],
-                \App\Models\Issue::PRIORITY_LOW ?? 'low' => ['label' => 'ไม่เร่งด่วน', 'bg' => 'rgba(22,163,74,0.12)', 'color' => '#15803d', 'dot' => '#16a34a'],
-            ];
-            $priorityBadge = $priorityBadgeStyles[$issue->priority] ?? ['label' => '-', 'bg' => '#f3f4f6', 'color' => '#6b7280', 'dot' => '#9ca3af'];
-        @endphp
-
-        {{-- ============ SHELL: header + info in one card ============ --}}
-        <div class="review-shell">
-
-            {{-- HEADER --}}
-            <div class="review-header-row">
-                <div>
-                    <div class="review-title">
-                        {{ $issue->issue_number }}
-                        <button type="button" class="btn-copy-link-icon ms-2" title="คัดลอกลิงก์"
-                            aria-label="คัดลอกลิงก์" onclick="copyText('{{ $issueViewUrl }}');">
-                            <i class="ri-file-copy-line"></i>
-                        </button>
-                    </div>
-                    <div class="review-issue-number">
-                        #{{ $issue->issue_number }}
-                    </div>
-                </div>
-
-                <div class="review-nav-links">
-                    @if ($issue->status != \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
-                        <button id="closeIssueBtn" class="nav-approve-close" type="button">
-                            Approve &amp; Close Issue
-                        </button>
-                    @endif
-                    <a href="{{ route('issue.index', $business) }}">Home</a>
-                    <a href="{{ route('issue.duplicate', [$business, $issue->id]) }}" class="btn-duplicate">Duplicate</a>
-                    <a href="{{ route('issue.create', $business) }}">Create New</a>
-                </div>
-            </div>
-
-            <div class="review-section-title">
-                <i class="ri-information-line"></i> หัวข้อปัญหา
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-lg-6">
-                    <div class="review-info-block">
-                        <div class="info-field-label">โปรเจค</div>
-                        <div class="info-field-value">
-                            <i class="ri-building-2-line me-1 text-muted"></i>
-                            {{ $business->business_name ?? '-' }}
-                        </div>
-                    </div>
-                    <div class="review-info-block">
-                        <div class="info-field-label">เนื่องวันที่</div>
-                        <div class="info-field-value">
-                            {{ $issue->created_at->format('d/m/y • H:i A') }}
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                         </div>
                     </div>
                 </div>
@@ -922,7 +521,6 @@ video/mp4,video/webm,video/quicktime,
                 formData.append("file", file);
                 formData.append("_token", "{{ csrf_token() }}");
 
-<<<<<<< HEAD
                     fetch("{{ route('issue.upload') }}", {
                             method: "POST",
                             body: formData
@@ -946,20 +544,6 @@ video/mp4,video/webm,video/quicktime,
 
                     uploadedFiles = uploadedFiles.filter(path => {
                         return !path.endsWith(file.name);
-=======
-                fetch("{{ route('issue.upload', $business) }}", {
-                        method: "POST",
-                        body: formData
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        uploadedFiles.push(res.path);
-                        console.log("Uploaded:", res.path);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        alert("อัปโหลดไฟล์ไม่สำเร็จ");
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                     });
             });
 

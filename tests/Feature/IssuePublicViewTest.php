@@ -82,7 +82,6 @@ class IssuePublicViewTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)
-<<<<<<< HEAD
             ->getJson('/issue/my/table', ['draw' => 1, 'start' => 0, 'length' => 10]);
 
         $response->assertOk()
@@ -123,13 +122,5 @@ class IssuePublicViewTest extends TestCase
             ->get('/issue/my')
             ->assertOk()
             ->assertSee('รายการ Issue ABBL Automation Co-Work');
-=======
-            ->getJson("/issue/{$this->businessId}/table", ['draw' => 1, 'start' => 0, 'length' => 10]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.0.id', $issue->id)
-            ->assertJsonPath('data.0.view_url', route('issue.view', [$this->businessId, $issue->id]))
-            ->assertJsonPath('data.0.edit_url', route('issue.create', [$this->businessId, 'draft' => $issue->id]));
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
     }
 }

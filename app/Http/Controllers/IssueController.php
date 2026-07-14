@@ -56,14 +56,9 @@ class IssueController extends Controller
         return view('public.issue.view', compact('issue', 'comments', 'business'));
     }
 
-<<<<<<< HEAD
     public function table(Request $request)
     {
         $business = Business::findOrFail(issueBusinessId());
-=======
-    public function table(Request $request, Business $business)
-    {
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
         $query = Issue::where('business_id', $business->id)
                       ->withCount('comments')
                       ->with(['comments' => function ($commentsQuery) {
@@ -115,17 +110,10 @@ class IssueController extends Controller
                 'description' => $issue->description,
                 'status' => $issue->status,
                 'priority' => $issue->priority,
-<<<<<<< HEAD
                 'view_url' => route('issue.view', $issue->id),
                 'edit_url' => $isEditableDraft
                     ? route('issue.create', ['draft' => $issue->id])
                     : route('issue.view', $issue->id),
-=======
-                'view_url' => route('issue.view', [$business->id, $issue->id]),
-                'edit_url' => $isEditableDraft
-                    ? route('issue.create', [$business->id, 'draft' => $issue->id])
-                    : route('issue.view', [$business->id, $issue->id]),
->>>>>>> 4678da5b230b923330afb93dd19e90960a9d5e91
                 'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
                 'comments_count' => (int)$issue->comments_count,
                 'latest_comment' => $latestComment?->comment,
