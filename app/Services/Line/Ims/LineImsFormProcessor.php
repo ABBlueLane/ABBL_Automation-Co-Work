@@ -198,7 +198,7 @@ class LineImsFormProcessor
     {
         $baseUrl = rtrim((string) config('services.line.ims.public_base_url', config('app.url')), '/');
 
-        return "{$baseUrl}/issue/view/{$issueId}";
+        return "{$baseUrl}/issue/{$businessId}/view/{$issueId}";
     }
 
     private function notifyIssueSubmittedToGroup(LineChatSource $chatSource, Issue $issue, ?string $replyToken): void

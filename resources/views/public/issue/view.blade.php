@@ -2,6 +2,14 @@
 @section('navbar_container', 'container')
 @section('content')
     <style>
+        /* ============================================================
+           REVIEW ISSUE REPORT — matched to reference screenshot
+        ============================================================ */
+
+        body, .container.py-4 {
+            background: #f6f7f9;
+        }
+
         .btn-copy-link-icon {
             background: none;
             border: none;
@@ -10,115 +18,355 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #9ca3af;
-            font-size: 1.25rem;
+            color: #b0b5bd;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: color 0.15s ease, transform 0.15s ease;
         }
         .btn-copy-link-icon:hover {
-            color: #4f46e5;
+            color: #3762f0;
             transform: scale(1.1);
         }
         .btn-copy-link-icon:focus {
             outline: none;
         }
-        .status-timeline-wrap {
-            margin-top: 4px;
+
+        /* ---------- Outer shell ---------- */
+        .review-shell {
+            background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%);
+            border-radius: 24px;
+            box-shadow: 0 1px 3px rgba(17, 24, 39, .06);
+            padding: 34px 36px;
+            margin-bottom: 24px;
         }
-        .status-timeline {
-            position: relative;
+
+        .review-header-row {
             display: flex;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-top: 18px;
-            padding: 0 4px;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 30px;
         }
-        .status-timeline::before {
-            content: '';
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            right: 8px;
-            height: 3px;
-            background: #e5e7eb;
-            z-index: 0;
-        }
-        .status-timeline .st-fill {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            height: 3px;
-            background: #4f46e5;
-            z-index: 1;
-            transition: width 0.3s ease;
-        }
-        .status-timeline .st-dot-wrap {
-            position: relative;
-            z-index: 2;
+
+        .review-title {
+            font-weight: 800;
+            font-size: 1.85rem;
+            color: #181b21;
+            letter-spacing: -0.01em;
+            margin-bottom: 2px;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            flex: 1;
         }
-        .status-timeline .st-dot {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #fff;
-            border: 3px solid #e5e7eb;
-            transition: all 0.2s ease;
+
+        .review-issue-number {
+            color: #9aa1ac;
+            font-size: .85rem;
+            font-weight: 500;
         }
-        .status-timeline .st-dot.done {
-            background: #4f46e5;
-            border-color: #4f46e5;
+
+        /* plain-text nav links (no button chrome) */
+        .review-nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+            padding-top: 10px;
+            flex-wrap: wrap;
         }
-        .status-timeline .st-dot.current {
-            background: #dc3545;
-            border-color: #dc3545;
-            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
-        }
-        .status-timeline .st-label {
-            margin-top: 8px;
-            font-size: 0.72rem;
-            color: #9ca3af;
-            text-align: center;
+        .review-nav-links a,
+        .review-nav-links button {
+            background: none;
+            border: none;
+            color: #6b7280;
+            font-size: .9rem;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 0;
             white-space: nowrap;
         }
-        .status-timeline .st-dot-wrap:first-child { align-items: flex-start; }
-        .status-timeline .st-dot-wrap:last-child { align-items: flex-end; }
+        .review-nav-links a:hover,
+        .review-nav-links button:hover {
+            color: #111827;
+        }
+        .review-nav-links .nav-approve-close {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .review-section-title {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .review-section-title i {
+            color: #9aa1ac;
+            font-size: 1.05rem;
+        }
+
+        .info-field-label {
+            color: #9aa1ac;
+            font-size: .78rem;
+            margin-bottom: 6px;
+        }
+
+        .info-field-value {
+            color: #1f2937;
+            font-size: .95rem;
+            font-weight: 500;
+        }
+
+        .review-info-block + .review-info-block {
+            margin-top: 22px;
+        }
+
+        .avatar-circle {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #e0e7ff;
+            color: #3762f0;
+            font-size: .75rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ---------- Priority pill ---------- */
+        .priority-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+        .priority-pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+
+
+        /* ---------- Details (plain text, no box) ---------- */
+        .review-details-text {
+            color: #374151;
+            font-size: .92rem;
+            line-height: 1.7;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        /* ---------- Attach panels ---------- */
+        .attach-panel {
+            background: #f0f1f3;
+            border-radius: 18px;
+            padding: 18px;
+            height: 100%;
+        }
+
+        .link-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .75rem 1rem;
+            background: #fff;
+            border: 1px solid #ececef;
+            border-radius: 12px;
+            color: #1f2937;
+            text-decoration: none;
+            font-size: .88rem;
+        }
+        .link-row:hover {
+            background: #fafafb;
+            color: #1f2937;
+        }
+        .link-row + .link-row {
+            margin-top: .55rem;
+        }
+        .link-row .link-row-icon {
+            width: 20px;
+            display: inline-flex;
+            justify-content: center;
+            color: #6b7280;
+        }
+        .link-row .link-row-text {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            overflow: hidden;
+        }
+
+        .file-card {
+            background: #fff;
+            border: 1px solid #ececef;
+            border-radius: 14px;
+            padding: .7rem .85rem;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            height: 100%;
+            text-decoration: none;
+            color: #1f2937;
+        }
+        .file-card:hover {
+            background: #fafafb;
+            color: #1f2937;
+        }
+        .file-card .file-name {
+            font-size: .82rem;
+            font-weight: 600;
+            line-height: 1.25;
+            word-break: break-word;
+        }
+        .file-card .file-meta {
+            font-size: .72rem;
+            color: #9aa1ac;
+            text-transform: uppercase;
+        }
+
+        .file-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+        .file-icon-box.icon-image { background: #eef0ff; color: #5b6bf5; }
+        .file-icon-box.icon-doc   { background: #eaf1ff; color: #3762f0; }
+        .file-icon-box.icon-sheet { background: #e8f8ee; color: #1fa15a; }
+        .file-icon-box.icon-generic { background: #f0f1f3; color: #6b7280; }
+
+        /* ---------- Discussion card ---------- */
+        .review-card {
+            background: #fff;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(17, 24, 39, .05);
+        }
+
+        .discussion-comment {
+            display: flex;
+            gap: .75rem;
+            padding: 0 0 1.1rem;
+        }
+        .discussion-comment-content {
+            min-width: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .discussion-comment + .discussion-comment {
+            margin-top: .25rem;
+            padding-top: 1.1rem;
+            border-top: 1px solid #f1f3f5;
+        }
+
+        .comment-compose {
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 1rem 1.25rem;
+            margin-top: 1.4rem;
+            background: #f9fafb;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+        .comment-compose:focus-within {
+            border-color: #3762f0;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(55, 98, 240, 0.08);
+        }
+
+        .comment-compose textarea {
+            border: none;
+            resize: vertical;
+            min-height: 100px;
+            box-shadow: none !important;
+            padding: 0;
+            font-size: .95rem;
+            line-height: 1.6;
+            background: transparent;
+            color: #1f2937;
+        }
+        .comment-compose textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        .comment-compose textarea:focus {
+            outline: none;
+        }
+
+        .comment-compose-icon-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #9aa1ac;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        .comment-compose-icon-btn:hover {
+            background: #f4f5f7;
+            color: #374151;
+        }
+
+        .btn-send-pill {
+            background: #3762f0;
+            border-color: #3762f0;
+            border-radius: 999px;
+            padding: .4rem 1.3rem;
+            font-weight: 600;
+        }
+        .btn-send-pill:hover {
+            background: #2c4fd6;
+            border-color: #2c4fd6;
+        }
+
+        .back-to-edit-btn {
+            border-radius: 999px;
+            padding: .55rem 1.4rem;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            font-weight: 500;
+        }
+        .back-to-edit-btn:hover {
+            background: #f9fafb;
+            color: #374151;
+        }
     </style>
+
     <div class="container py-4">
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-6 col-12">
-                                <div class="d-flex align-items-center gap-2 flex-wrap">
-                                    <a href="{{ route('issue.index') }}" class="btn btn-outline-dark btn-sm flex-shrink-0">
-                                        <i class="ri-arrow-left-line me-1"></i>
-                                        ย้อนกลับ
-                                    </a>
-                                    <h4 class="mb-0">
-                                        <i class="ri-bug-line me-1"></i>
-                                        Issue Management System
-                                    </h4>
-                                </div>
-                            </div>
-                            <div class="col-lg-6 col-12 text-lg-end text-start">
-
-                                <ol class="breadcrumb m-0 ms-auto d-inline-flex">
-                                    <li class="breadcrumb-item">
-                                        <a href="{{ route('business.select') }}">เลือกธุรกิจ</a>
-                                    </li>
-                                    <li class="breadcrumb-item">
-                                        <a href="{{ route('issue.index') }}">Issue Management</a>
-                                    </li>
-                                    <li class="breadcrumb-item active">
-                                        Issue View
-                                    </li>
-                                </ol>
-                            </div>
+        @if ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id())
+            <div class="alert alert-warning mb-3">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold mb-1">
+                            <i class="ri-eye-line me-1"></i>
+                            รีวิวแบบร่าง
                         </div>
                         <p class="mb-0 small">
                             ตรวจสอบหัวข้อ รายละเอียด ลิงก์ และไฟล์แนบด้านล่าง — ยังไม่เข้าคิวทีมงานจนกว่าคุณจะกด
@@ -127,7 +375,7 @@
                         </p>
                     </div>
                     <div class="d-flex flex-wrap gap-2 flex-shrink-0">
-                        <a href="{{ route('issue.create', $business) }}?draft={{ $issue->id }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ route('issue.create', ['draft' => $issue->id]) }}" class="btn btn-sm btn-outline-primary">
                             <i class="ri-edit-line me-1"></i> แก้ไขร่าง
                         </a>
                         <button type="button" class="btn btn-sm btn-success" id="submitDraftFromView">
@@ -136,129 +384,67 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-12">
-                @if ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id())
-                    <div class="alert alert-warning mb-3">
-                        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold mb-1">
-                                    <i class="ri-eye-line me-1"></i>
-                                    รีวิวแบบร่าง
-                                </div>
-                                <p class="mb-0 small">
-                                    ตรวจสอบหัวข้อ รายละเอียด ลิงก์ และไฟล์แนบด้านล่าง — ยังไม่เข้าคิวทีมงานจนกว่าคุณจะกด
-                                    <strong>ส่งเข้าระบบ</strong>
-                                    หากต้องการแก้ไขก่อน ให้กด <strong>แก้ไขร่าง</strong>
-                                </p>
-                            </div>
-                            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
-                                <a href="{{ route('issue.create') }}?draft={{ $issue->id }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="ri-edit-line me-1"></i> แก้ไขร่าง
-                                </a>
-                                <button type="button" class="btn btn-sm btn-success" id="submitDraftFromView">
-                                    <i class="ri-send-plane-line me-1"></i> ส่งเข้าระบบ
-                                </button>
-                            </div>
+        @endif
+
+        @php
+            $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
+            $issueViewUrl = route('issue.view', [$business->id, $issue->id]);
+
+            $priorityBadgeStyles = [
+                \App\Models\Issue::PRIORITY_HIGH ?? 'high' => ['label' => 'เร่งด่วน', 'bg' => 'rgba(217,72,72,0.12)', 'color' => '#b83b3b', 'dot' => '#d94848'],
+                \App\Models\Issue::PRIORITY_MEDIUM ?? 'medium' => ['label' => 'ปานกลาง', 'bg' => 'rgba(242,169,59,0.15)', 'color' => '#92620a', 'dot' => '#f2a93b'],
+                \App\Models\Issue::PRIORITY_LOW ?? 'low' => ['label' => 'ไม่เร่งด่วน', 'bg' => 'rgba(22,163,74,0.12)', 'color' => '#15803d', 'dot' => '#16a34a'],
+            ];
+            $priorityBadge = $priorityBadgeStyles[$issue->priority] ?? ['label' => '-', 'bg' => '#f3f4f6', 'color' => '#6b7280', 'dot' => '#9ca3af'];
+        @endphp
+
+        {{-- ============ SHELL: header + info in one card ============ --}}
+        <div class="review-shell">
+
+            {{-- HEADER --}}
+            <div class="review-header-row">
+                <div>
+                    <div class="review-title">
+                        {{ $issue->issue_number }}
+                        <button type="button" class="btn-copy-link-icon ms-2" title="คัดลอกลิงก์"
+                            aria-label="คัดลอกลิงก์" onclick="copyText('{{ $issueViewUrl }}');">
+                            <i class="ri-file-copy-line"></i>
+                        </button>
+                    </div>
+                    <div class="review-issue-number">
+                        #{{ $issue->issue_number }}
+                    </div>
+                </div>
+
+                <div class="review-nav-links">
+                    @if ($issue->status != \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
+                        <button id="closeIssueBtn" class="nav-approve-close" type="button">
+                            Approve &amp; Close Issue
+                        </button>
+                    @endif
+                    <a href="{{ route('issue.index') }}">Home</a>
+                    <a href="{{ route('issue.duplicate', $issue->id) }}" class="btn-duplicate">Duplicate</a>
+                    <a href="{{ route('issue.create') }}">Create New</a>
+                </div>
+            </div>
+
+            <div class="review-section-title">
+                <i class="ri-information-line"></i> หัวข้อปัญหา
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="review-info-block">
+                        <div class="info-field-label">โปรเจค</div>
+                        <div class="info-field-value">
+                            <i class="ri-building-2-line me-1 text-muted"></i>
+                            {{ $business->business_name ?? '-' }}
                         </div>
                     </div>
-                @endif
-                {{-- TITLE + DESCRIPTION --}}
-                <div class="card mb-4">
-                    <div class="card-body">
-
-                        <div class="row mb-3 align-items-start">
-
-                            {{-- LEFT --}}
-                            <div class="col-12 col-md">
-                                @php
-                                    $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
-                                    $issueViewUrl = route('issue.view', $issue->id);
-                                @endphp
-                                <h3 class="fw-bold mb-1 text-dark">
-    <i class="ri-bug-line me-2 text-primary"></i>Issue #{{ $issue->issue_number }}<button
-        type="button"
-        class="btn-copy-link-icon ms-2 align-middle"
-        title="คัดลอกลิงก์" aria-label="คัดลอกลิงก์"
-        onclick="copyText('{{ $issueViewUrl }}');">
-        <i class="ri-links-line"></i>
-    </button>
-</h3>
-
-<div class="text-muted small">
-    {{ $issue->title }}
-</div>
-                                {{-- STATUS --}}
-                                <div>
-                                    <div class="mt-1">
-                                        <span class="text-muted small me-1">สถานะ:</span>
-                                        <span class="badge {{ $statusMeta['class'] }}">
-                                            {{ $statusMeta['label'] }}
-                                        </span>
-                                    </div>
-
-                                    @if ($issue->status !== \App\Models\Issue::STATUS_DRAFT)
-                                        @php
-                                            $statusSteps = [
-                                                \App\Models\Issue::STATUS_PENDING => 'รอรีวิว',
-                                                \App\Models\Issue::STATUS_IN_PROGRESS => 'กำลังดำเนินการ',
-                                                \App\Models\Issue::STATUS_CUSTOMER_REPLIED => 'รอลูกค้าตอบกลับ',
-                                                \App\Models\Issue::STATUS_DONE => 'ปิดเคสแล้ว',
-                                            ];
-                                            $stepKeys = array_keys($statusSteps);
-                                            $currentIndex = array_search($issue->status, $stepKeys);
-                                            $currentIndex = $currentIndex === false ? 0 : $currentIndex;
-                                            $totalSteps = count($stepKeys);
-                                            $fillPercent = $totalSteps > 1 ? ($currentIndex / ($totalSteps - 1)) * 100 : 0;
-                                        @endphp
-                                        <div class="status-timeline-wrap" style="max-width: 480px;">
-                                            <div class="status-timeline">
-                                                <div class="st-fill" style="width: {{ $fillPercent }}%;"></div>
-                                                @foreach ($statusSteps as $key => $label)
-                                                    @php
-                                                        $idx = $loop->index;
-                                                        $dotClass = $idx < $currentIndex ? 'done' : ($idx === $currentIndex ? 'current' : '');
-                                                    @endphp
-                                                    <div class="st-dot-wrap">
-                                                        <div class="st-dot {{ $dotClass }}"></div>
-                                                        <div class="st-label">{{ $label }}</div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-
-                            {{-- RIGHT (status + buttons) --}}
-                            <div class="col-12 col-md-auto">
-
-                                <div
-                                    class="d-flex flex-column flex-md-row align-items-md-center gap-2 justify-content-md-end">
-
-                                    {{-- BUTTONS --}}
-                                    <div class="d-flex flex-wrap gap-2">
-                                        @if ($issue->status != \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
-                                            <button id="closeIssueBtn" class="btn btn-success btn-sm" type="button">
-                                                <i class="ri-check-line me-1"></i> Approve and close issue
-                                            </button>
-                                        @endif
-                                        <a href="{{ route('issue.index') }}" class="btn btn-primary btn-sm">
-                                            <i class="ri-file-list-3-line me-1"></i> Home
-                                        </a>
-                                        <a href="{{ route('issue.duplicate', $issue->id) }}"
-                                            class="btn btn-warning btn-sm btn-duplicate">
-                                            <i class="ri-file-copy-line me-1"></i> Duplicate
-                                        </a>
-                                        <a href="{{ route('issue.create') }}" class="btn btn-primary btn-sm">
-                                            <i class="ri-add-line me-1"></i> Create new
-                                        </a>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
+                    <div class="review-info-block">
+                        <div class="info-field-label">เนื่องวันที่</div>
+                        <div class="info-field-value">
+                            {{ $issue->created_at->format('d/m/y • H:i A') }}
                         </div>
                     </div>
                 </div>
@@ -402,7 +588,7 @@
                                 {{ mb_substr($comment->user->full_name ?? $comment->user->name ?? '-', 0, 1) }}
                             @endif
                         </span>
-                        <div class="flex-grow-1">
+                        <div class="flex-grow-1 discussion-comment-content">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="fw-bold">
                                     {{ $comment->user->full_name ?? $comment->user->name }}
@@ -442,7 +628,7 @@
                     <form id="commentForm">
                         @csrf
                         <div class="comment-compose">
-                            <textarea name="comment" class="form-control" rows="2"
+                            <textarea name="comment" class="form-control" rows="4"
                                 placeholder="Write a comment, use @ to mention someone..."></textarea>
 
                             <div id="commentAttachArea" class="d-none mt-2 mb-2">
@@ -465,7 +651,7 @@
                             <div class="d-flex align-items-center justify-content-end gap-1 mt-2">
                                 <button type="button" id="commentAttachToggle"
                                     class="comment-compose-icon-btn" title="แนบไฟล์หรือรูปภาพ">
-                                    <i class="ri-emotion-line"></i>
+                                    <i class="ri-image-add-line"></i>
                                 </button>
                                 <button class="btn btn-send-pill btn-primary btn-sm" type="submit">
                                     Send
@@ -477,7 +663,7 @@
             </div>
         </div>
 
-        <a href="{{ ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id()) ? route('issue.create', $business) . '?draft=' . $issue->id : route('issue.index', $business) }}"
+        <a href="{{ ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id()) ? route('issue.create', ['draft' => $issue->id]) : route('issue.index') }}"
             class="back-to-edit-btn">
             <i class="ri-arrow-left-line me-1"></i> Back to Edit
         </a>
@@ -521,29 +707,18 @@ video/mp4,video/webm,video/quicktime,
                 formData.append("file", file);
                 formData.append("_token", "{{ csrf_token() }}");
 
-                    fetch("{{ route('issue.upload') }}", {
-                            method: "POST",
-                            body: formData
-                        })
-                        .then(res => res.json())
-                        .then(res => {
-
-                            uploadedFiles.push(res.path);
-
-                            console.log("Uploaded:", res.path);
-
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            alert("อัปโหลดไฟล์ไม่สำเร็จ");
-                        });
-
-                });
-
-                dz.on("removedfile", function(file) {
-
-                    uploadedFiles = uploadedFiles.filter(path => {
-                        return !path.endsWith(file.name);
+                fetch("{{ route('issue.upload') }}", {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        uploadedFiles.push(res.path);
+                        console.log("Uploaded:", res.path);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("อัปโหลดไฟล์ไม่สำเร็จ");
                     });
             });
 
@@ -584,10 +759,17 @@ video/mp4,video/webm,video/quicktime,
 
             const attachToggleBtn = document.getElementById('commentAttachToggle');
             if (attachToggleBtn) {
-                attachToggleBtn.addEventListener('click', function() {
+                attachToggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const attachArea = document.getElementById('commentAttachArea');
-                    if (attachArea) attachArea.classList.remove('d-none');
-                    document.getElementById('browseTrigger2').click();
+                    if (attachArea) {
+                        if (attachArea.classList.contains('d-none')) {
+                            attachArea.classList.remove('d-none');
+                            document.getElementById('browseTrigger2').click();
+                        } else {
+                            attachArea.classList.add('d-none');
+                        }
+                    }
                 });
             }
 

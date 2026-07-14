@@ -35,13 +35,14 @@ class IssueController extends Controller
         return view('public.issue.index', compact('business'));
     }
 
-    public function view(int $id)
+    public function view(string $business, int $id)
     {
+        $business = Business::findOrFail($business);
+
         $issue = Issue::where('id', $id)
+            ->where('business_id', $business->id)
             ->with(['firstComment', 'creator', 'assignee'])
             ->firstOrFail();
-
-        $business = $issue->business_id;
 
         if ($issue->status === Issue::STATUS_DRAFT && $issue->created_by !== Auth::id()) {
             abort(403);
@@ -110,10 +111,10 @@ class IssueController extends Controller
                 'description' => $issue->description,
                 'status' => $issue->status,
                 'priority' => $issue->priority,
-                'view_url' => route('issue.view', $issue->id),
+                'view_url' => route('issue.view', [$issue->business_id, $issue->id]),
                 'edit_url' => $isEditableDraft
                     ? route('issue.create', ['draft' => $issue->id])
-                    : route('issue.view', $issue->id),
+                    : route('issue.view', [$issue->business_id, $issue->id]),
                 'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
                 'comments_count' => (int)$issue->comments_count,
                 'latest_comment' => $latestComment?->comment,
@@ -256,7 +257,7 @@ class IssueController extends Controller
         return response()->json([
             'success' => true,
             'issue_id' => $issue->id,
-            'redirect_view' => route('issue.view', $issue->id),
+            'redirect_view' => route('issue.view', [$issue->business_id, $issue->id]),
         ]);
     }
 
@@ -298,7 +299,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', $issue->id),
+            'redirect' => route('issue.view', [$issue->business_id, $issue->id]),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
@@ -373,7 +374,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', $issue->id),
+            'redirect' => route('issue.view', [$issue->business_id, $issue->id]),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
