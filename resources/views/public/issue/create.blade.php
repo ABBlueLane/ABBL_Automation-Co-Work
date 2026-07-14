@@ -293,9 +293,17 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            flex-wrap: wrap;
+            gap: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
-            padding: 24px !important;
+            padding: 20px !important;
+        }
+        .dropzone.dz-started {
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: flex-start;
+            align-content: flex-start;
         }
         .dropzone:hover {
             border-color: var(--primary-blue) !important;
@@ -323,6 +331,75 @@
             color: var(--text-muted);
             font-size: 0.75rem;
             margin-top: 4px;
+        }
+
+        /* Uploaded file previews — horizontal grid */
+        .dropzone .dz-preview {
+            display: flex !important;
+            float: none !important;
+            flex-direction: column;
+            align-items: center;
+            width: 120px !important;
+            min-height: auto !important;
+            margin: 0 !important;
+            position: relative;
+        }
+        .dropzone .dz-preview .dz-image {
+            width: 120px !important;
+            height: 120px !important;
+            border-radius: 12px !important;
+            overflow: hidden;
+            background: #e2e8f0;
+        }
+        .dropzone .dz-preview .dz-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .dropzone .dz-preview .dz-details {
+            display: none !important;
+        }
+        .dropzone .dz-preview .dz-progress,
+        .dropzone .dz-preview .dz-success-mark,
+        .dropzone .dz-preview .dz-error-mark {
+            display: none !important;
+        }
+        .dropzone .dz-preview .dz-remove {
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #ef4444 !important;
+            text-decoration: none !important;
+            text-align: center;
+        }
+        .dropzone .dz-preview .dz-remove:hover {
+            color: #dc2626 !important;
+            text-decoration: underline !important;
+        }
+        .dropzone .dz-preview.dz-add-more {
+            width: 120px !important;
+            margin: 0 !important;
+        }
+        .dropzone .dz-preview.dz-add-more .dz-add-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 2rem;
+            font-weight: 300;
+            color: #94a3b8;
+            background: #fff;
+            transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+        }
+        .dropzone .dz-preview.dz-add-more .dz-add-tile:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+            background: var(--primary-blue-soft);
         }
 
         /* Input with icon link */
@@ -456,6 +533,58 @@
             border-radius: 50%;
             display: inline-block;
             margin-right: 6px;
+        }
+        .review-files-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 8px;
+        }
+        .review-file-item {
+            width: 120px;
+            text-align: center;
+        }
+        .review-file-thumb {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .review-file-thumb > a {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none !important;
+            color: transparent;
+            overflow: hidden;
+        }
+        .review-file-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            cursor: zoom-in;
+        }
+        .review-file-thumb .review-file-icon {
+            font-size: 2rem;
+            color: #94a3b8;
+        }
+        .review-file-name {
+            margin-top: 8px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
         }
 
         /* Step 3 Success UI */
@@ -712,6 +841,7 @@
         const previewUrl = "{{ route('issue.preview', $business) }}";
         const storeSubmitUrl = "{{ route('issue.store.submit', $business) }}";
         const issueIndexBase = "{{ route('issue.index', $business) }}";
+        const storageBaseUrl = @json(asset('storage'));
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
         let currentStep = 1;
@@ -789,6 +919,7 @@ video/mp4,video/webm,video/quicktime,
 .md,.html,.htm,.txt,.json,.xml,.css,.js
 `,
             addRemoveLinks: true,
+            dictRemoveFile: "ลบไฟล์",
             clickable: true,
         });
 
@@ -804,10 +935,10 @@ video/mp4,video/webm,video/quicktime,
             myDropzone.emit("addedfile", mockFile);
 
             if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
-                myDropzone.emit("thumbnail", mockFile, "/storage/" + filePath);
+                myDropzone.emit("thumbnail", mockFile, storageBaseUrl + "/" + filePath);
             } else if (['mp4', 'webm', 'mov'].includes(ext)) {
                 let video = document.createElement('video');
-                video.src = "/storage/" + filePath;
+                video.src = storageBaseUrl + "/" + filePath;
                 video.controls = true;
                 video.style.width = "100%";
                 video.style.borderRadius = "8px";
@@ -841,29 +972,14 @@ video/mp4,video/webm,video/quicktime,
             myDropzone.emit("addedfile", plusFile);
 
             let preview = plusFile.previewElement;
+            preview.classList.add("dz-add-more");
 
-            preview.innerHTML = `
-    <div style="
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        height:120px;
-        border:2px dashed #bbb;
-        border-radius:12px;
-        cursor:pointer;
-        font-size:36px;
-        color:#bbb;
-        transition: all 0.2s;
-    "
-    onmouseover="this.style.borderColor='#2563eb'; this.style.color='#2563eb'"
-    onmouseout="this.style.borderColor='#bbb'; this.style.color='#bbb'"
-    >
-        +
-    </div>
-`;
+            preview.innerHTML = `<div class="dz-add-tile" title="เพิ่มไฟล์">+</div>`;
 
-            preview.addEventListener("click", function() {
-                document.querySelector("#browseTrigger").click();
+            preview.addEventListener("click", function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                myDropzone.hiddenFileInput.click();
             });
 
             myDropzone.files.push(plusFile);
@@ -885,17 +1001,25 @@ video/mp4,video/webm,video/quicktime,
 
         myDropzone.on("success", function(file, response) {
             uploadedFiles.push(response.path);
+            file.serverPath = response.path;
+            if (response.name) {
+                file.originalName = response.name;
+            }
         });
 
         myDropzone.on("removedfile", function(file) {
             if (file.isAddButton) return;
 
+            const pathName = (file.serverPath || '').split('/').pop();
+
             existingFiles = existingFiles.filter(path => {
-                return path.split('/').pop() !== file.name;
+                const base = path.split('/').pop();
+                return base !== file.name && base !== pathName;
             });
 
             uploadedFiles = uploadedFiles.filter(path => {
-                return path.split('/').pop() !== file.name;
+                const base = path.split('/').pop();
+                return base !== file.name && base !== pathName && path !== file.serverPath;
             });
 
             let realFiles = myDropzone.files.filter(f => !f.isAddButton);
@@ -1012,10 +1136,59 @@ video/mp4,video/webm,video/quicktime,
             return map[value] || { color: '#6c757d', label: '-' };
         }
 
-        function getReviewFileNames() {
-            return myDropzone.files
+        function isImageFileName(name) {
+            return /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(name || '');
+        }
+
+        function getReviewFiles() {
+            const pathByBase = {};
+            [...existingFiles, ...uploadedFiles].forEach(function(path) {
+                if (!path || path === 'add-more') return;
+                pathByBase[String(path).split('/').pop()] = path;
+            });
+
+            const fromDropzone = myDropzone.files
                 .filter(function(file) { return !file.isAddButton; })
-                .map(function(file) { return file.name; });
+                .map(function(file) {
+                    const name = file.originalName || file.name || 'file';
+                    const path = file.serverPath || pathByBase[file.name] || null;
+                    const imgEl = file.previewElement && file.previewElement.querySelector('.dz-image img');
+                    const isImage = isImageFileName(name)
+                        || isImageFileName(path)
+                        || !!(file.type && file.type.indexOf('image/') === 0)
+                        || !!(imgEl && imgEl.src);
+
+                    let url = null;
+                    if (imgEl && imgEl.src) {
+                        url = imgEl.src;
+                    } else if (path && isImage) {
+                        url = storageBaseUrl + '/' + path;
+                    }
+
+                    return {
+                        name: name,
+                        path: path,
+                        url: url,
+                        isImage: isImage,
+                    };
+                });
+
+            if (fromDropzone.length > 0) {
+                return fromDropzone;
+            }
+
+            return [...existingFiles, ...uploadedFiles]
+                .filter(function(path) { return path && path !== 'add-more'; })
+                .map(function(path) {
+                    const name = String(path).split('/').pop();
+                    const isImage = isImageFileName(name);
+                    return {
+                        name: name,
+                        path: path,
+                        url: isImage ? (storageBaseUrl + '/' + path) : null,
+                        isImage: isImage,
+                    };
+                });
         }
 
         function renderFormReviewSummary() {
@@ -1025,13 +1198,25 @@ video/mp4,video/webm,video/quicktime,
             const noUrl = $('#noUrlCheckbox').is(':checked');
             const url = noUrl ? '' : ($('#urlInput').val() || '').trim();
             const priority = getPriorityReviewMeta();
-            const files = getReviewFileNames();
+            const files = getReviewFiles();
 
             let filesHtml = '<div class="review-field-value text-muted">-</div>';
             if (files.length > 0) {
-                filesHtml = '<ul class="list-unstyled mb-0 review-field-value">' + files.map(function(name) {
-                    return '<li><i class="ri-file-line me-1"></i>' + escapeHtml(name) + '</li>';
-                }).join('') + '</ul>';
+                filesHtml = '<div class="review-files-grid">' + files.map(function(file) {
+                    let thumbInner;
+                    if (file.isImage && file.url) {
+                        thumbInner = '<a href="' + escapeHtml(file.url) + '" target="_blank" rel="noopener">' +
+                            '<img src="' + escapeHtml(file.url) + '" alt="" loading="lazy" ' +
+                            'onerror="this.onerror=null;this.parentElement.outerHTML=\'<i class=&quot;ri-image-line review-file-icon&quot;></i>\'">' +
+                            '</a>';
+                    } else {
+                        thumbInner = '<i class="ri-file-line review-file-icon"></i>';
+                    }
+                    return '<div class="review-file-item">' +
+                        '<div class="review-file-thumb">' + thumbInner + '</div>' +
+                        '<div class="review-file-name" title="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + '</div>' +
+                        '</div>';
+                }).join('') + '</div>';
             }
 
             let urlHtml = '<span class="text-muted">ไม่มี URL สำหรับการแจ้งปัญหานี้</span>';
