@@ -708,14 +708,11 @@
 
                             {{-- โปรเจค --}}
                             <div class="col-md-4">
-                                <label class="field-label">โปรเจค <span class="text-danger">*</span></label>
+                                <label class="field-label">โปรเจค</label>
                                 @php
-                                    $currentBusiness = \App\Models\Business::find($business);
                                     $selectedIssueProjectId = old(
                                         'issue_project_id',
-                                        $issue?->issue_project_id
-                                            ?? optional($issueProjects->firstWhere('name', $currentBusiness?->business_name))->id
-                                            ?? ''
+                                        $issue?->issue_project_id ?? ''
                                     );
                                 @endphp
                                 <select name="issue_project_id" id="issue_project_id" class="input-clean select-clean">
@@ -1096,9 +1093,7 @@ video/mp4,video/webm,video/quicktime,
             if (!$('input[name="priority"]:checked').val()) {
                 return 'กรุณาเลือกความเร่งด่วน';
             }
-            if ($('select[name="issue_project_id"]').length && !$('select[name="issue_project_id"]').val()) {
-                return 'กรุณาเลือกโปรเจค';
-            }
+            // Project selection is optional
             const comment = $('#commentTextarea').val().trim();
             if (!comment) {
                 return 'กรุณากรอกรายละเอียด';
@@ -1193,7 +1188,8 @@ video/mp4,video/webm,video/quicktime,
 
         function renderFormReviewSummary() {
             const title = $('input[name="title"]').val().trim();
-            const projectName = $('#issue_project_id option:selected').text().trim();
+            const projectVal = $('#issue_project_id').val();
+            const projectName = projectVal ? $('#issue_project_id option:selected').text().trim() : '';
             const comment = $('#commentTextarea').val().trim();
             const noUrl = $('#noUrlCheckbox').is(':checked');
             const url = noUrl ? '' : ($('#urlInput').val() || '').trim();
