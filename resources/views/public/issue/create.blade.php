@@ -452,11 +452,6 @@
             background-color: #cbd5e1;
             color: #334155;
         }
-        .text-save-draft {
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 0.85rem;
-        }
         .btn-continue {
             background-color: var(--primary-blue);
             color: #ffffff;
@@ -810,7 +805,7 @@
             <!-- Step 1 Actions -->
             <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
                 <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
-                <span class="text-save-draft text-muted">กด Ctrl+S เพื่อบันทึกแบบร่าง</span>
+                <span></span>
                 <button type="button" class="btn btn-continue" id="reviewBtn">
                     ถัดไป <i class="ri-arrow-right-line ms-2"></i>
                 </button>
@@ -1433,6 +1428,12 @@ video/mp4,video/webm,video/quicktime,
         $('#urlInput').on('input change', function() {
             syncNoUrlCheckbox();
             updateReviewButtonState();
+        });
+
+        $(window).on('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+            }
         });
 
         // Initialize state on load

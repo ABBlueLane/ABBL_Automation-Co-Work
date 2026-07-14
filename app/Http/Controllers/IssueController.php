@@ -256,6 +256,7 @@ class IssueController extends Controller
         return response()->json([
             'success' => true,
             'issue_id' => $issue->id,
+            'issue_number' => $issue->issue_number,
             'redirect_view' => route('issue.view', $issue->id),
         ]);
     }
