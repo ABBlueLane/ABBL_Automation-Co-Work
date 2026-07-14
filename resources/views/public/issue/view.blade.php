@@ -168,6 +168,9 @@
             color: #374151;
             font-size: .92rem;
             line-height: 1.7;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         /* ---------- Attach panels ---------- */
@@ -267,6 +270,12 @@
             gap: .75rem;
             padding: 0 0 1.1rem;
         }
+        .discussion-comment-content {
+            min-width: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
         .discussion-comment + .discussion-comment {
             margin-top: .25rem;
             padding-top: 1.1rem;
@@ -276,16 +285,30 @@
         .comment-compose {
             border: 1px solid #e5e7eb;
             border-radius: 18px;
-            padding: .85rem 1rem;
+            padding: 1rem 1.25rem;
             margin-top: 1.4rem;
+            background: #f9fafb;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+        .comment-compose:focus-within {
+            border-color: #3762f0;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(55, 98, 240, 0.08);
         }
 
         .comment-compose textarea {
             border: none;
-            resize: none;
+            resize: vertical;
+            min-height: 100px;
             box-shadow: none !important;
             padding: 0;
-            font-size: .9rem;
+            font-size: .95rem;
+            line-height: 1.6;
+            background: transparent;
+            color: #1f2937;
+        }
+        .comment-compose textarea::placeholder {
+            color: #9ca3af;
         }
 
         .comment-compose textarea:focus {
@@ -565,7 +588,7 @@
                                 {{ mb_substr($comment->user->full_name ?? $comment->user->name ?? '-', 0, 1) }}
                             @endif
                         </span>
-                        <div class="flex-grow-1">
+                        <div class="flex-grow-1 discussion-comment-content">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="fw-bold">
                                     {{ $comment->user->full_name ?? $comment->user->name }}
@@ -605,7 +628,7 @@
                     <form id="commentForm">
                         @csrf
                         <div class="comment-compose">
-                            <textarea name="comment" class="form-control" rows="2"
+                            <textarea name="comment" class="form-control" rows="4"
                                 placeholder="Write a comment, use @ to mention someone..."></textarea>
 
                             <div id="commentAttachArea" class="d-none mt-2 mb-2">
@@ -628,7 +651,7 @@
                             <div class="d-flex align-items-center justify-content-end gap-1 mt-2">
                                 <button type="button" id="commentAttachToggle"
                                     class="comment-compose-icon-btn" title="แนบไฟล์หรือรูปภาพ">
-                                    <i class="ri-emotion-line"></i>
+                                    <i class="ri-image-add-line"></i>
                                 </button>
                                 <button class="btn btn-send-pill btn-primary btn-sm" type="submit">
                                     Send
@@ -736,10 +759,17 @@ video/mp4,video/webm,video/quicktime,
 
             const attachToggleBtn = document.getElementById('commentAttachToggle');
             if (attachToggleBtn) {
-                attachToggleBtn.addEventListener('click', function() {
+                attachToggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const attachArea = document.getElementById('commentAttachArea');
-                    if (attachArea) attachArea.classList.remove('d-none');
-                    document.getElementById('browseTrigger2').click();
+                    if (attachArea) {
+                        if (attachArea.classList.contains('d-none')) {
+                            attachArea.classList.remove('d-none');
+                            document.getElementById('browseTrigger2').click();
+                        } else {
+                            attachArea.classList.add('d-none');
+                        }
+                    }
                 });
             }
 

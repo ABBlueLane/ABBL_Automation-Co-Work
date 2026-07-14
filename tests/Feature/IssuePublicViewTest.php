@@ -65,7 +65,7 @@ class IssuePublicViewTest extends TestCase
 
         $this->get("/issue/{$this->businessId}/view/{$issue->id}")
             ->assertOk()
-            ->assertSee('ปัญหาจาก LINE')
+            ->assertSee('ABBL-IMS202607-000004')
             ->assertSee('รายละเอียดจาก LINE');
     }
 
