@@ -16,7 +16,7 @@
         }
 
         body, input, select, textarea, button {
-            font-family: 'Inter', 'Sarabun', sans-serif !important;
+            font-family: 'Sarabun', 'Inter', sans-serif !important;
         }
 
         body {
@@ -24,7 +24,7 @@
         }
 
         .content-wrapper {
-            padding-bottom: 120px; /* Space for the fixed footer */
+            padding-bottom: 40px;
         }
 
         /* Header Banner redesign */
@@ -420,38 +420,28 @@
             padding-left: 44px !important;
         }
 
-        /* Sticky Footer Bar — align with Velzon main-content (not under sidebar) */
+        /* Footer Bar — attached inside main-form-card */
         .form-footer-bar {
-            position: fixed;
-            bottom: 0;
-            left: var(--vz-vertical-menu-width, 250px);
-            right: 0;
-            background-color: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            padding: 16px 40px;
+            border-top: 1px solid #000000ff;
+            padding-top: 24px;
+            margin-top: 32px;
             display: flex;
             align-items: center;
-            z-index: 1000;
-            box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.03);
-            height: 72px;
-        }
-        @media (max-width: 767.98px) {
-            .form-footer-bar {
-                left: 0;
-            }
+            width: 100%;
         }
         .btn-cancel {
             background-color: #e2e8f0;
             color: #475569;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-cancel:hover {
             background-color: #cbd5e1;
@@ -466,13 +456,14 @@
             background-color: var(--primary-blue);
             color: #ffffff;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-continue:hover {
             background-color: var(--primary-blue-hover);
@@ -486,13 +477,14 @@
             background-color: #10b981;
             color: #ffffff;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-success-custom:hover {
             background-color: #059669;
@@ -808,30 +800,27 @@
                         </a>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Redesigned sticky footer actions -->
-    <div class="form-footer-bar">
-        <div class="container d-flex align-items-center justify-content-between">
-            <!-- Step 1 Actions -->
-            <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
-                <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
-                <span class="text-save-draft text-muted">กด Ctrl+S เพื่อบันทึกแบบร่าง</span>
-                <button type="button" class="btn btn-continue" id="reviewBtn">
-                    ถัดไป <i class="ri-arrow-right-line ms-2"></i>
-                </button>
-            </div>
-            <!-- Step 2 Actions -->
-            <div id="step2Actions" class="d-flex w-100 justify-content-between align-items-center d-none">
-                <button type="button" class="btn btn-cancel" id="reviewBackBtn">
-                    <i class="ri-arrow-left-line me-2"></i> กลับไปแก้ไข
-                </button>
-                <span></span>
-                <button type="button" class="btn btn-success-custom" id="reviewSubmitBtn">
-                    บันทึกเข้าระบบ <i class="ri-save-line ms-2"></i>
-                </button>
+                <!-- Footer actions attached directly inside card -->
+                <div class="form-footer-bar">
+                    <!-- Step 1 Actions -->
+                    <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
+                        <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
+                        <button type="button" class="btn btn-continue" id="reviewBtn">
+                            ถัดไป <i class="ri-arrow-right-line ms-2"></i>
+                        </button>
+                    </div>
+                    <!-- Step 2 Actions -->
+                    <div id="step2Actions" class="d-flex w-100 justify-content-between align-items-center d-none">
+                        <button type="button" class="btn btn-cancel" id="reviewBackBtn">
+                            <i class="ri-arrow-left-line me-2"></i> กลับไปแก้ไข
+                        </button>
+                        <span></span>
+                        <button type="button" class="btn btn-success-custom" id="reviewSubmitBtn">
+                            บันทึกเข้าระบบ <i class="ri-save-line ms-2"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1291,12 +1280,7 @@ video/mp4,video/webm,video/quicktime,
                 success: function(res) {
                     Swal.close();
                     if (res.success) {
-                        $('#savedIssueNumber').text(res.issue_number || '-');
-                        $('#step3DetailBody').html(res.html || '');
-                        if (res.redirect) {
-                            $('#viewIssueBtn').attr('href', res.redirect);
-                        }
-                        goToStep(3);
+                        window.location.href = issueIndexBase;
                         return;
                     }
                     Swal.fire({
