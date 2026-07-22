@@ -60,80 +60,76 @@
                 </div>
             </div>
 
-            <div class="row mt-5 g-4">
+            <div class="row mt-5">
                 <!-- แนบลิงค์ -->
-                <div class="col-md-6">
-                    <div class="p-4 rounded-4 h-100" style="background-color: #f1f5f9;">
-                        <h6 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                            <i class="ri-link-m fs-5 me-2"></i> แนบลิงค์
-                        </h6>
-                        <div>
-                            @if ($issue?->url)
-                                <div class="border rounded-3 p-3 bg-white d-flex align-items-center justify-content-between shadow-sm transition-all hover-shadow mb-3" style="border-color: #e5e7eb !important;">
-                                    <div class="d-flex align-items-center overflow-hidden w-100">
-                                        <div class="bg-light rounded p-2 me-3 text-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
-                                            <i class="ri-layout-grid-line fs-5"></i>
-                                        </div>
-                                        <div class="text-dark fw-medium text-truncate">
-                                            {{ $issue->url }}
-                                        </div>
+                <div class="col-md-6 mb-4 mb-md-0">
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center">
+                        <i class="ri-link-m fs-5 me-2"></i> แนบลิงค์
+                    </h6>
+                    <div class="ps-4">
+                        @if ($issue?->url)
+                            <div class="border rounded-3 p-3 bg-white d-flex align-items-center justify-content-between shadow-sm transition-all hover-shadow" style="border-color: #e5e7eb !important;">
+                                <div class="d-flex align-items-center overflow-hidden w-100">
+                                    <div class="bg-light rounded p-2 me-3 text-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                        <i class="ri-layout-grid-line fs-5"></i>
                                     </div>
-                                    <a href="{{ $issue->url }}" target="_blank" class="text-muted ms-3 p-2 rounded hover-bg-light transition-all flex-shrink-0">
-                                        <i class="ri-external-link-line fs-5"></i>
-                                    </a>
+                                    <div class="text-dark fw-medium text-truncate">
+                                        {{ $issue->url }}
+                                    </div>
                                 </div>
-                            @else
-                                <div class="text-muted small">-</div>
-                            @endif
-                        </div>
+                                <a href="{{ $issue->url }}" target="_blank" class="text-muted ms-3 p-2 rounded hover-bg-light transition-all flex-shrink-0">
+                                    <i class="ri-external-link-line fs-5"></i>
+                                </a>
+                            </div>
+                        @else
+                            <div class="text-muted small">-</div>
+                        @endif
                     </div>
                 </div>
 
                 <!-- แนบไฟล์ -->
                 <div class="col-md-6">
-                    <div class="p-4 rounded-4 h-100" style="background-color: #f1f5f9;">
-                        <h6 class="fw-bold text-dark mb-4 d-flex align-items-center">
-                            <i class="ri-attachment-2 fs-5 me-2"></i> แนบไฟล์
-                        </h6>
-                        <div>
-                            @php
-                                $issueFiles = array_filter((array) (data_get($issue, 'firstComment.files') ?: []));
-                            @endphp
-                            
-                            @if (count($issueFiles) > 0)
-                                <div class="row g-3">
-                                    @foreach ($issueFiles as $file)
-                                        <div class="col-12 col-xl-6">
-                                            @php
-                                                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-                                                $url = asset('storage/' . $file);
-                                                $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
-                                                $fileName = basename($file);
-                                            @endphp
-                                            <a href="{{ $url }}" target="_blank" class="text-decoration-none border rounded-3 p-3 bg-white d-flex align-items-center shadow-sm transition-all hover-shadow h-100" style="border-color: #e5e7eb !important;">
-                                                <div class="bg-light rounded p-2 me-3 text-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
-                                                    @if ($isImage)
-                                                        <i class="ri-image-line fs-5"></i>
-                                                    @else
-                                                        <i class="ri-file-text-line fs-5"></i>
-                                                    @endif
+                    <h6 class="fw-bold text-dark mb-3 d-flex align-items-center">
+                        <i class="ri-attachment-2 fs-5 me-2"></i> แนบไฟล์
+                    </h6>
+                    <div class="ps-4">
+                        @php
+                            $issueFiles = array_filter((array) (data_get($issue, 'firstComment.files') ?: []));
+                        @endphp
+                        
+                        @if (count($issueFiles) > 0)
+                            <div class="row g-3">
+                                @foreach ($issueFiles as $file)
+                                    <div class="col-12">
+                                        @php
+                                            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                                            $url = asset('storage/' . $file);
+                                            $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
+                                            $fileName = basename($file);
+                                        @endphp
+                                        <a href="{{ $url }}" target="_blank" class="text-decoration-none border rounded-3 p-3 bg-white d-flex align-items-center shadow-sm transition-all hover-shadow" style="border-color: #e5e7eb !important;">
+                                            <div class="bg-light rounded p-2 me-3 text-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                                @if ($isImage)
+                                                    <i class="ri-image-line fs-5"></i>
+                                                @else
+                                                    <i class="ri-file-text-line fs-5"></i>
+                                                @endif
+                                            </div>
+                                            <div class="overflow-hidden">
+                                                <div class="text-dark fw-medium text-truncate mb-1" style="font-size: 0.9rem;" title="{{ $fileName }}">
+                                                    {{ $fileName }}
                                                 </div>
-                                                <div class="overflow-hidden">
-                                                    <div class="text-dark fw-medium text-truncate mb-1" style="font-size: 0.9rem;" title="{{ $fileName }}">
-                                                        {{ $fileName }}
-                                                    </div>
-                                                    <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">
-                                                        {{ $ext }}
-                                                    </div>
+                                                <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">
+                                                    {{ $ext }}
                                                 </div>
-                                            </a>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="text-muted small">-</div>
-                            @endif
-                        </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-muted small">-</div>
+                        @endif
                     </div>
                 </div>
             </div>

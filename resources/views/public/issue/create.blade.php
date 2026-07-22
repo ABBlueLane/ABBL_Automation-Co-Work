@@ -15,11 +15,7 @@
             --text-muted: #64748b;
         }
 
-        body,
-        input,
-        select,
-        textarea,
-        button {
+        body, input, select, textarea, button {
             font-family: 'Inter', 'Sarabun', sans-serif !important;
         }
 
@@ -28,8 +24,7 @@
         }
 
         .content-wrapper {
-            padding-bottom: 120px;
-            /* Space for the fixed footer */
+            padding-bottom: 120px; /* Space for the fixed footer */
         }
 
         /* Stepper progress */
@@ -41,7 +36,6 @@
             max-width: 500px;
             margin: 2rem auto 3rem auto;
         }
-
         .stepper-item {
             display: flex;
             flex-direction: column;
@@ -50,7 +44,6 @@
             position: relative;
             width: 100px;
         }
-
         .stepper-circle {
             width: 44px;
             height: 44px;
@@ -63,21 +56,18 @@
             font-weight: 700;
             font-size: 1rem;
             border: 4px solid var(--body-bg);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
             transition: all 0.25s ease;
         }
-
         .stepper-item.active .stepper-circle {
             background-color: var(--primary-blue);
             color: #ffffff;
             box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.15);
         }
-
         .stepper-item.done .stepper-circle {
             background-color: var(--primary-blue);
             color: #ffffff;
         }
-
         .stepper-label {
             margin-top: 10px;
             font-size: 0.8rem;
@@ -86,34 +76,26 @@
             transition: color 0.25s ease;
             white-space: nowrap;
         }
-
         .stepper-item.active .stepper-label,
         .stepper-item.done .stepper-label {
             color: var(--text-main);
         }
-
-        .stepper-line-1,
-        .stepper-line-2 {
+        .stepper-line-1, .stepper-line-2 {
             position: absolute;
-            top: 22px;
-            /* middle of circle */
+            top: 22px; /* middle of circle */
             height: 3px;
             background-color: #e2e8f0;
             z-index: 1;
         }
-
         .stepper-line-1 {
             left: 50px;
             width: calc(50% - 50px);
         }
-
         .stepper-line-2 {
             right: 50px;
             width: calc(50% - 50px);
         }
-
-        .stepper-line-1.active,
-        .stepper-line-2.active {
+        .stepper-line-1.active, .stepper-line-2.active {
             background-color: var(--primary-blue);
         }
 
@@ -126,13 +108,11 @@
             padding: 40px;
             margin-bottom: 40px;
         }
-
         .card-header-clean {
             border-bottom: none;
             background: transparent;
             padding: 0;
         }
-
         .card-title-clean {
             font-size: 1.25rem;
             font-weight: 700;
@@ -141,7 +121,6 @@
             align-items: center;
             margin: 0;
         }
-
         .card-title-clean i {
             font-size: 1.4rem;
             margin-right: 8px;
@@ -155,7 +134,6 @@
             color: var(--text-main);
             margin-bottom: 8px;
         }
-
         .input-clean {
             width: 100%;
             border: 1.5px solid #e2e8f0;
@@ -166,17 +144,14 @@
             background-color: #ffffff;
             transition: all 0.2s ease;
         }
-
         .input-clean::placeholder {
             color: #94a3b8;
         }
-
         .input-clean:focus {
             border-color: var(--primary-blue);
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
             outline: none;
         }
-
         .select-clean {
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3e%3cpath d='M12 16L6 10H18L12 16Z'/%3e%3c/svg%3e");
@@ -185,7 +160,6 @@
             background-size: 20px;
             padding-right: 48px;
         }
-
         .textarea-clean {
             resize: vertical;
             min-height: 140px;
@@ -202,11 +176,9 @@
             max-width: 320px;
             justify-content: space-between;
         }
-
         .priority-segment input[type="radio"] {
             display: none;
         }
-
         .priority-label-btn {
             flex: 1;
             text-align: center;
@@ -223,50 +195,40 @@
             align-items: center;
             justify-content: center;
         }
-
         .priority-label-btn::before {
             content: "●";
             margin-right: 6px;
             display: none;
             font-size: 0.65rem;
         }
-
         /* High priority checked */
-        .priority-segment input[value="high"]:checked+.priority-label-btn {
-            background-color: #c5221f;
-            /* dark red */
+        .priority-segment input[value="high"]:checked + .priority-label-btn {
+            background-color: #c5221f; /* dark red */
             color: #ffffff;
             font-weight: 600;
             box-shadow: 0 2px 6px rgba(197, 34, 31, 0.2);
         }
-
-        .priority-segment input[value="high"]:checked+.priority-label-btn::before {
+        .priority-segment input[value="high"]:checked + .priority-label-btn::before {
             display: inline-block;
         }
-
         /* Medium priority checked */
-        .priority-segment input[value="medium"]:checked+.priority-label-btn {
-            background-color: #f59e0b;
-            /* amber */
+        .priority-segment input[value="medium"]:checked + .priority-label-btn {
+            background-color: #f59e0b; /* amber */
             color: #ffffff;
             font-weight: 600;
             box-shadow: 0 2px 6px rgba(245, 158, 11, 0.2);
         }
-
-        .priority-segment input[value="medium"]:checked+.priority-label-btn::before {
+        .priority-segment input[value="medium"]:checked + .priority-label-btn::before {
             display: inline-block;
         }
-
         /* Low priority checked */
-        .priority-segment input[value="low"]:checked+.priority-label-btn {
-            background-color: #10b981;
-            /* emerald green */
+        .priority-segment input[value="low"]:checked + .priority-label-btn {
+            background-color: #10b981; /* emerald green */
             color: #ffffff;
             font-weight: 600;
             box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
         }
-
-        .priority-segment input[value="low"]:checked+.priority-label-btn::before {
+        .priority-segment input[value="low"]:checked + .priority-label-btn::before {
             display: inline-block;
         }
 
@@ -280,7 +242,6 @@
             display: flex;
             align-items: center;
         }
-
         .section-separator i {
             margin-right: 8px;
             font-size: 1.25rem;
@@ -302,24 +263,20 @@
             transition: all 0.2s ease;
             padding: 20px !important;
         }
-
         .dropzone.dz-started {
             flex-direction: row;
             align-items: flex-start;
             justify-content: flex-start;
             align-content: flex-start;
         }
-
         .dropzone:hover {
             border-color: var(--primary-blue) !important;
             background-color: var(--primary-blue-soft) !important;
         }
-
         .active-dropzone {
             border-color: var(--primary-blue) !important;
             background-color: var(--primary-blue-soft) !important;
         }
-
         .dz-message {
             margin: 0 !important;
             display: flex;
@@ -328,14 +285,12 @@
             justify-content: center;
             text-align: center;
         }
-
         .dropzone-link {
             color: var(--primary-blue);
             font-weight: 600;
             font-size: 0.9rem;
             transition: color 0.15s ease;
         }
-
         .dropzone-subtext {
             color: var(--text-muted);
             font-size: 0.75rem;
@@ -353,7 +308,6 @@
             margin: 0 !important;
             position: relative;
         }
-
         .dropzone .dz-preview .dz-image {
             width: 120px !important;
             height: 120px !important;
@@ -361,23 +315,19 @@
             overflow: hidden;
             background: #e2e8f0;
         }
-
         .dropzone .dz-preview .dz-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-
         .dropzone .dz-preview .dz-details {
             display: none !important;
         }
-
         .dropzone .dz-preview .dz-progress,
         .dropzone .dz-preview .dz-success-mark,
         .dropzone .dz-preview .dz-error-mark {
             display: none !important;
         }
-
         .dropzone .dz-preview .dz-remove {
             display: inline-block;
             margin-top: 8px;
@@ -387,17 +337,14 @@
             text-decoration: none !important;
             text-align: center;
         }
-
         .dropzone .dz-preview .dz-remove:hover {
             color: #dc2626 !important;
             text-decoration: underline !important;
         }
-
         .dropzone .dz-preview.dz-add-more {
             width: 120px !important;
             margin: 0 !important;
         }
-
         .dropzone .dz-preview.dz-add-more .dz-add-tile {
             display: flex;
             align-items: center;
@@ -413,7 +360,6 @@
             background: #fff;
             transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
         }
-
         .dropzone .dz-preview.dz-add-more .dz-add-tile:hover {
             border-color: var(--primary-blue);
             color: var(--primary-blue);
@@ -425,7 +371,6 @@
             position: relative;
             width: 100%;
         }
-
         .input-group-icon-wrap .icon-prefix {
             position: absolute;
             left: 16px;
@@ -435,7 +380,6 @@
             font-size: 1.15rem;
             z-index: 4;
         }
-
         .input-group-icon-wrap .input-with-icon {
             padding-left: 44px !important;
         }
@@ -455,13 +399,11 @@
             box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.03);
             height: 72px;
         }
-
         @media (max-width: 767.98px) {
             .form-footer-bar {
                 left: 0;
             }
         }
-
         .btn-cancel {
             background-color: #e2e8f0;
             color: #475569;
@@ -475,18 +417,15 @@
             display: inline-flex;
             align-items: center;
         }
-
         .btn-cancel:hover {
             background-color: #cbd5e1;
             color: #334155;
         }
-
         .text-save-draft {
             color: var(--text-muted);
             font-weight: 500;
             font-size: 0.85rem;
         }
-
         .btn-continue {
             background-color: var(--primary-blue);
             color: #ffffff;
@@ -499,17 +438,14 @@
             display: inline-flex;
             align-items: center;
         }
-
         .btn-continue:hover {
             background-color: var(--primary-blue-hover);
             color: #ffffff;
         }
-
         .btn-continue:disabled {
             background-color: #93c5fd;
             cursor: not-allowed;
         }
-
         .btn-success-custom {
             background-color: #10b981;
             color: #ffffff;
@@ -522,7 +458,6 @@
             display: inline-flex;
             align-items: center;
         }
-
         .btn-success-custom:hover {
             background-color: #059669;
             color: #ffffff;
@@ -532,7 +467,6 @@
         .review-summary {
             padding: 10px 0;
         }
-
         .review-field-box {
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
@@ -541,7 +475,6 @@
             height: 100%;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
         }
-
         .review-field-label {
             font-size: 0.8rem;
             font-weight: 600;
@@ -552,20 +485,17 @@
             display: flex;
             align-items: center;
         }
-
         .review-field-label i {
             font-size: 1rem;
             margin-right: 6px;
             color: var(--primary-blue);
         }
-
         .review-field-value {
             font-size: 0.95rem;
             font-weight: 600;
             color: var(--text-main);
             word-break: break-word;
         }
-
         .review-priority-dot {
             width: 14px;
             height: 14px;
@@ -573,19 +503,16 @@
             display: inline-block;
             margin-right: 6px;
         }
-
         .review-files-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 14px;
             margin-top: 8px;
         }
-
         .review-file-item {
             width: 120px;
             text-align: center;
         }
-
         .review-file-thumb {
             width: 120px;
             height: 120px;
@@ -598,8 +525,7 @@
             justify-content: center;
             position: relative;
         }
-
-        .review-file-thumb>a {
+        .review-file-thumb > a {
             display: block;
             width: 100%;
             height: 100%;
@@ -607,7 +533,6 @@
             color: transparent;
             overflow: hidden;
         }
-
         .review-file-thumb img {
             width: 100%;
             height: 100%;
@@ -615,12 +540,10 @@
             display: block;
             cursor: zoom-in;
         }
-
         .review-file-thumb .review-file-icon {
             font-size: 2rem;
             color: #94a3b8;
         }
-
         .review-file-name {
             margin-top: 8px;
             font-size: 0.72rem;
@@ -638,7 +561,6 @@
             text-align: center;
             padding: 40px 20px;
         }
-
         .success-icon-wrap {
             width: 72px;
             height: 72px;
@@ -652,7 +574,6 @@
             margin-bottom: 24px;
             box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);
         }
-
         .ims-badge {
             display: inline-block;
             background-color: var(--primary-blue-soft);
@@ -674,7 +595,7 @@
             <div class="stepper-container" id="issueStepper">
                 <div class="stepper-line-1" id="stepperLine1"></div>
                 <div class="stepper-line-2" id="stepperLine2"></div>
-
+                
                 <div class="stepper-item" data-step="1">
                     <div class="stepper-circle">1</div>
                     <div class="stepper-label">กรอกข้อมูล</div>
@@ -718,10 +639,7 @@
                                 <div class="priority-segment-container">
                                     <div class="priority-segment">
                                         @php
-                                            $selectedPriority = (string) old(
-                                                'priority',
-                                                $issue?->priority ?? \App\Models\Issue::PRIORITY_HIGH,
-                                            );
+                                            $selectedPriority = (string) old('priority', $issue?->priority ?? \App\Models\Issue::PRIORITY_HIGH);
                                             $priorityOrder = [
                                                 \App\Models\Issue::PRIORITY_HIGH => 'เร่งด่วน',
                                                 \App\Models\Issue::PRIORITY_MEDIUM => 'กลาง',
@@ -731,8 +649,7 @@
                                         @foreach ($priorityOrder as $value => $label)
                                             <input type="radio" name="priority" id="priority_{{ $value }}"
                                                 value="{{ $value }}" @checked($selectedPriority === (string) $value)>
-                                            <label for="priority_{{ $value }}"
-                                                class="priority-label-btn {{ $value }}">
+                                            <label for="priority_{{ $value }}" class="priority-label-btn {{ $value }}">
                                                 {{ $label }}
                                             </label>
                                         @endforeach
@@ -747,17 +664,16 @@
                                     $currentBusiness = \App\Models\Business::find($business);
                                     $selectedIssueProjectId = old(
                                         'issue_project_id',
-                                        $issue?->issue_project_id ??
-                                            (optional(
-                                                $issueProjects->firstWhere('name', $currentBusiness?->business_name),
-                                            )->id ??
-                                                ''),
+                                        $issue?->issue_project_id
+                                            ?? optional($issueProjects->firstWhere('name', $currentBusiness?->business_name))->id
+                                            ?? ''
                                     );
                                 @endphp
                                 <select name="issue_project_id" id="issue_project_id" class="input-clean select-clean">
                                     <option value="">เลือกโปรเจค</option>
                                     @foreach ($issueProjects as $project)
-                                        <option value="{{ $project->id }}" @selected((string) $selectedIssueProjectId === (string) $project->id)>
+                                        <option value="{{ $project->id }}"
+                                            @selected((string) $selectedIssueProjectId === (string) $project->id)>
                                             {{ $project->name }}
                                         </option>
                                     @endforeach
@@ -783,11 +699,9 @@
                                 <label class="field-label">อัปโหลด</label>
                                 <div class="dropzone" id="mediaDropzone" tabindex="0">
                                     <div class="dz-message py-3">
-                                        <i class="ri-cloud-line"
-                                            style="font-size: 2.2rem; color: #2563eb; margin-bottom: 8px;"></i>
+                                        <i class="ri-cloud-line" style="font-size: 2.2rem; color: #2563eb; margin-bottom: 8px;"></i>
                                         <p class="mb-1" style="font-size: 0.9rem;">
-                                            <span id="browseTrigger" class="dropzone-link">ลากไฟล์มาวาง &
-                                                คลิกที่นี่เพื่ออัปโหลด</span>
+                                            <span id="browseTrigger" class="dropzone-link">ลากไฟล์มาวาง & คลิกที่นี่เพื่ออัปโหลด</span>
                                         </p>
                                         <span class="dropzone-subtext">สูงสุด: 50MB</span>
                                     </div>
@@ -799,12 +713,10 @@
                                 <label class="field-label">แนบลิงค์</label>
                                 <div class="input-group-icon-wrap">
                                     <i class="ri-link-m icon-prefix"></i>
-                                    <input type="url" name="url" id="urlInput"
-                                        class="input-clean input-with-icon" value="{{ old('url', $issue?->url ?? '') }}"
-                                        placeholder="https://example.com">
+                                    <input type="url" name="url" id="urlInput" class="input-clean input-with-icon"
+                                        value="{{ old('url', $issue?->url ?? '') }}" placeholder="https://example.com">
                                 </div>
-                                <input type="checkbox" id="noUrlCheckbox" style="display: none;"
-                                    @checked(empty(old('url', $issue?->url ?? '')))>
+                                <input type="checkbox" id="noUrlCheckbox" style="display: none;" @checked(empty(old('url', $issue?->url ?? '')))>
                             </div>
                         </div>
                     </form>
@@ -822,31 +734,26 @@
                 </div>
 
                 {{-- Step 3: ผลการบันทึก + เลข IMS --}}
-                <div id="stepPanel3" class="wizard-step d-none px-md-4 py-md-3">
-                    <!-- Center Success -->
-                    <div class="text-center mb-5 mt-4">
-                        <div class="d-inline-flex justify-content-center align-items-center rounded-circle mb-3"
-                            style="width: 72px; height: 72px; background-color: #d1fae5;">
-                            <i class="ri-check-line text-success"
-                                style="font-size: 40px; font-weight: bold; color: #10b981 !important;"></i>
-                        </div>
-                        <h3 class="fw-bold text-dark mb-2">บันทึกข้อมูลสำเร็จ</h3>
-                        <p class="text-muted mb-4" style="font-size: 0.95rem;">รายการของคุณถูกส่งเข้าสู่ระบบเรียบร้อย</p>
+                <div id="stepPanel3" class="wizard-step d-none">
 
-                        <div class="d-inline-block px-4 py-2 border rounded-3 text-secondary fw-bold mb-4"
-                            id="savedIssueNumberBadge"
-                            style="font-size: 1.5rem; letter-spacing: 1px; font-family: 'Inter', monospace; background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                    <!-- Center Success -->
+                    <div class="text-center py-4">
+                        <div class="d-inline-flex justify-content-center align-items-center rounded-circle mb-3" style="width: 64px; height: 64px; background: linear-gradient(135deg, #34d399 0%, #10b981 100%); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);">
+                            <i class="ri-check-line" style="font-size: 32px; font-weight: bold; color: #fff !important;"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark mb-2" style="font-size: 1.25rem;">บันทึกข้อมูลสำเร็จ</h3>
+                        <p class="text-muted mb-4" style="font-size: 0.9rem;">รายการของคุณถูกส่งเข้าสู่ระบบเรียบร้อย</p>
+                        <div id="savedIssueNumberBadge" class="fw-bold" style="font-size: 1.85rem; color: #475569; letter-spacing: 0.5px;">
                             #
                         </div>
-
                     </div>
 
                     <!-- Detail Body -->
                     <div id="step3DetailBody"></div>
-
+                    
                     <!-- Bottom Home Button -->
-                    <div class="d-flex justify-content-end mt-4">
-                        <a href="{{ route('issue.index') }}" class="btn btn-primary px-4 py-2 fw-medium shadow-sm d-flex align-items-center" style="border-radius: 8px; background-color: #2563eb; border: none;">
+                    <div class="d-flex justify-content-end mt-4 pt-2 pb-2">
+                        <a href="{{ route('issue.index') }}" class="btn px-4 py-2 fw-medium d-flex align-items-center text-white" style="border-radius: 8px; background-color: #2563eb; border: none; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
                             Home <i class="ri-arrow-right-line ms-2"></i>
                         </a>
                     </div>
@@ -948,14 +855,11 @@
             } else if (step === 3) {
                 $('.form-footer-bar').addClass('d-none');
                 $('#issueStepper').addClass('d-none');
-                $('.main-form-card').addClass('border-0 shadow-none bg-transparent').css('padding', '0');
+                $('.main-form-card').removeClass('border-0 shadow-none').css({'padding': '32px 40px', 'background': '#ffffff'});
             }
 
             setActiveStep(step);
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         let myDropzone = new Dropzone("#mediaDropzone", {
@@ -1184,23 +1088,11 @@ video/mp4,video/webm,video/quicktime,
         function getPriorityReviewMeta() {
             const value = $('input[name="priority"]:checked').val();
             const map = {
-                high: {
-                    color: '#c5221f',
-                    label: 'เร่งด่วน'
-                },
-                medium: {
-                    color: '#f59e0b',
-                    label: 'กลาง'
-                },
-                low: {
-                    color: '#10b981',
-                    label: 'ต่ำ'
-                },
+                high: { color: '#c5221f', label: 'เร่งด่วน' },
+                medium: { color: '#f59e0b', label: 'กลาง' },
+                low: { color: '#10b981', label: 'ต่ำ' },
             };
-            return map[value] || {
-                color: '#6c757d',
-                label: '-'
-            };
+            return map[value] || { color: '#6c757d', label: '-' };
         }
 
         function isImageFileName(name) {
@@ -1215,17 +1107,15 @@ video/mp4,video/webm,video/quicktime,
             });
 
             const fromDropzone = myDropzone.files
-                .filter(function(file) {
-                    return !file.isAddButton;
-                })
+                .filter(function(file) { return !file.isAddButton; })
                 .map(function(file) {
                     const name = file.originalName || file.name || 'file';
                     const path = file.serverPath || pathByBase[file.name] || null;
                     const imgEl = file.previewElement && file.previewElement.querySelector('.dz-image img');
-                    const isImage = isImageFileName(name) ||
-                        isImageFileName(path) ||
-                        !!(file.type && file.type.indexOf('image/') === 0) ||
-                        !!(imgEl && imgEl.src);
+                    const isImage = isImageFileName(name)
+                        || isImageFileName(path)
+                        || !!(file.type && file.type.indexOf('image/') === 0)
+                        || !!(imgEl && imgEl.src);
 
                     let url = null;
                     if (imgEl && imgEl.src) {
@@ -1247,9 +1137,7 @@ video/mp4,video/webm,video/quicktime,
             }
 
             return [...existingFiles, ...uploadedFiles]
-                .filter(function(path) {
-                    return path && path !== 'add-more';
-                })
+                .filter(function(path) { return path && path !== 'add-more'; })
                 .map(function(path) {
                     const name = String(path).split('/').pop();
                     const isImage = isImageFileName(name);
@@ -1286,16 +1174,14 @@ video/mp4,video/webm,video/quicktime,
                     }
                     return '<div class="review-file-item">' +
                         '<div class="review-file-thumb">' + thumbInner + '</div>' +
-                        '<div class="review-file-name" title="' + escapeHtml(file.name) + '">' + escapeHtml(file
-                            .name) + '</div>' +
+                        '<div class="review-file-name" title="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + '</div>' +
                         '</div>';
                 }).join('') + '</div>';
             }
 
             let urlHtml = '<span class="text-muted">ไม่มี URL สำหรับการแจ้งปัญหานี้</span>';
             if (!noUrl && url) {
-                urlHtml = '<a href="' + escapeHtml(url) + '" target="_blank" class="text-primary fw-semibold">' +
-                    escapeHtml(url) + '</a>';
+                urlHtml = '<a href="' + escapeHtml(url) + '" target="_blank" class="text-primary fw-semibold">' + escapeHtml(url) + '</a>';
             }
 
             const html = `
@@ -1361,8 +1247,8 @@ video/mp4,video/webm,video/quicktime,
                 success: function(res) {
                     Swal.close();
                     if (res.success) {
-                        const trackingNo = res.issue_number || '-';
-                        $('#savedIssueNumberBadge').text('#' + trackingNo);
+                        const imsNumber = res.issue_number ? '#' + res.issue_number : '-';
+                        $('#savedIssueNumberBadge').text(imsNumber);
                         $('#step3DetailBody').html(res.html || '');
                         goToStep(3);
                         return;
