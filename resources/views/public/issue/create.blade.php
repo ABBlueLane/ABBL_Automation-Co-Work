@@ -785,6 +785,7 @@
         const previewUrl = "{{ route('issue.preview') }}";
         const storeSubmitUrl = "{{ route('issue.store.submit') }}";
         const issueIndexBase = "{{ route('issue.index') }}";
+        const afterSubmitRedirectUrl = "{{ route('admin.issues.index') }}";
         const storageBaseUrl = @json(asset('storage'));
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
@@ -1020,6 +1021,30 @@ video/mp4,video/webm,video/quicktime,
             e.preventDefault();
         });
 
+        function normalizeOptionalUrl(raw) {
+            const value = (raw || '').trim();
+            if (!value) {
+                return '';
+            }
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+                return value;
+            }
+            return 'https://' + value;
+        }
+
+        function isValidHttpUrl(raw) {
+            const value = normalizeOptionalUrl(raw);
+            if (!value) {
+                return false;
+            }
+            try {
+                const parsed = new URL(value);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
         function buildSubmitPayload() {
             let currentComment = $('#commentTextarea').val().trim();
             let allFiles = [...existingFiles, ...uploadedFiles];
@@ -1029,7 +1054,7 @@ video/mp4,video/webm,video/quicktime,
                 title: $('input[name="title"]').val().trim(),
                 priority: $('input[name="priority"]:checked').val() || '',
                 comment: currentComment,
-                url: $('#noUrlCheckbox').is(':checked') ? '' : ($('#urlInput').val() || ''),
+                url: $('#noUrlCheckbox').is(':checked') ? '' : normalizeOptionalUrl($('#urlInput').val()),
                 files: allFiles
             };
             if ($('select[name="issue_project_id"]').length) {
@@ -1055,6 +1080,9 @@ video/mp4,video/webm,video/quicktime,
                 const u = ($('#urlInput').val() || '').trim();
                 if (!u) {
                     return 'กรุณากรอกลิงก์ หรือปล่อยว่างหากไม่มีลิงก์';
+                }
+                if (!isValidHttpUrl(u)) {
+                    return 'กรุณากรอกลิงก์ให้ถูกต้อง เช่น example.com หรือ https://example.com';
                 }
             }
             return null;
@@ -1233,19 +1261,31 @@ video/mp4,video/webm,video/quicktime,
                 url: submitUrl,
                 method: "POST",
                 data: payload,
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 success: function(res) {
                     Swal.close();
-                    if (res.success) {
-                        const imsNumber = res.issue_number ? '#' + res.issue_number : '-';
-                        $('#savedIssueNumberBadge').text(imsNumber);
-                        $('#step3DetailBody').html(res.html || '');
-                        goToStep(3);
+                    if (res && res.success) {
+                        const imsNumber = res.issue_number ? '#' + res.issue_number : '';
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'บันทึกสำเร็จ',
+                            text: imsNumber ? ('สร้าง IMS ' + imsNumber + ' เรียบร้อยแล้ว') : 'สร้าง IMS เรียบร้อยแล้ว',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(function() {
+                            window.location.href = afterSubmitRedirectUrl;
+                        });
                         return;
                     }
                     Swal.fire({
                         icon: 'error',
                         title: 'เกิดข้อผิดพลาด',
-                        text: 'ไม่สามารถบันทึกข้อมูลได้'
+                        text: (res && res.message) ? res.message : 'ไม่สามารถบันทึกข้อมูลได้'
                     });
                 },
                 error: function(xhr) {

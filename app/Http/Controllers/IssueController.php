@@ -838,9 +838,37 @@ class IssueController extends Controller
 
     protected function mergeSubmitUrlEmptyToNull(Request $request): void
     {
-        if ($request->input('url') === '') {
+        $url = $request->input('url');
+
+        if ($url === '' || $url === null) {
             $request->merge(['url' => null]);
+
+            return;
         }
+
+        if (! is_string($url)) {
+            return;
+        }
+
+        $normalized = $this->normalizeOptionalUrl($url);
+        if ($normalized !== $url) {
+            $request->merge(['url' => $normalized]);
+        }
+    }
+
+    protected function normalizeOptionalUrl(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        // Allow bare domains like "example.com" by assuming https.
+        if (! preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+            $url = 'https://'.$url;
+        }
+
+        return $url;
     }
 
     protected function issueSubmitRules(): array
