@@ -66,7 +66,9 @@ class IssuePublicViewTest extends TestCase
         $this->get("/issue/{$this->businessId}/view/{$issue->id}")
             ->assertOk()
             ->assertSee('ABBL-IMS202607-000004')
-            ->assertSee('รายละเอียดจาก LINE');
+            ->assertSee('รายละเอียดจาก LINE')
+            ->assertDontSee('id="commentForm"', false)
+            ->assertSee('เข้าสู่ระบบ');
     }
 
     public function test_table_includes_edit_url_for_draft_issue(): void

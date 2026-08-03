@@ -79,9 +79,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/store-submit', [IssueController::class, 'storeAndSubmit']);
         Route::post('/{issue}/submit', [IssueController::class, 'submitDraft']);
         Route::post('/upload', [IssueController::class, 'upload']);
-        Route::get('/issue/{issue}/comments', [IssueCommentController::class, 'index']);
-        Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store']);
-        Route::post('/issue/{issue}/close', [IssueController::class, 'close']);
+        Route::get('/{issue}/comments', [IssueCommentController::class, 'index']);
+        Route::post('/{issue}/comment', [IssueCommentController::class, 'store']);
+        Route::post('/{issue}/close', [IssueController::class, 'close']);
         Route::post('/preview', [IssueController::class, 'preview']);
     });
 

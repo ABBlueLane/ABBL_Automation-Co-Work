@@ -28,7 +28,7 @@
 - แปลงข้อความ LINE → ฟิลด์ฟอร์ม IMS
 - จัดการ draft issue และ `form_state`
 - ดาวน์โหลดไฟล์/รูปจาก LINE แล้วแนบใน issue
-- auto-submit เมื่อฟอร์มครบ
+- submit เมื่อผู้ใช้ `@OA ยืนยัน` และฟอร์มครบ (ควบคุมด้วย `LINE_IMS_AUTO_SUBMIT`)
 
 ## ฟอร์มเป้าหมาย
 
@@ -201,12 +201,16 @@ Authorization: Bearer {LINE_CHANNEL_ACCESS_TOKEN}
 
 **ไม่บังคับ:** `comment`, `files`, `issue_project_id`
 
-เมื่อครบและ `config('services.line.ims.auto_submit') === true`:
+เมื่อฟอร์มครบและผู้ใช้สั่ง `@OA ยืนยัน` / `หยุดเก็บข้อมูล` และ `config('services.line.ims.auto_submit') === true`:
 
-1. เรียก `IssueSubmissionService::submitFromDraft($draftIssue)`
+1. เรียก `IssueSubmissionService::submitDraft($draftIssue)`
 2. อัปเดต `form_state.submitted_issue_id` และ `submitted_at`
 3. เคลียร์ `draft_issue_id` หรือเก็บ reference ไว้ใน `form_state`
 4. Reply LINE พร้อม issue number และลิงก์ `route('issue.view', [$business, $issue->id])`
+
+เมื่อ `auto_submit === false` การหยุดเก็บข้อมูลจะเก็บเป็นแบบร่างเท่านั้น และส่งลิงก์ไปแก้/ส่งต่อบนเว็บ
+
+> หมายเหตุ: ระบบไม่ submit กลางทางทันทีที่ฟิลด์ครบ — ยังต้อง `@OA ยืนยัน` เพื่อยืนยันการส่ง (ยกเว้นเมื่อ `auto_submit=false` ซึ่งไม่ส่งแม้ยืนยัน)
 
 ## Service Layer ที่ต้องสร้าง (แนะนำ)
 
@@ -257,7 +261,7 @@ LINE_IMS_AUTO_SUBMIT=true
 | ------------------------------ | --------------------------------------------------------------- |
 | `LINE_IMS_DEFAULT_BUSINESS_ID` | business UUID สำหรับสร้าง issue จาก LINE                        |
 | `LINE_IMS_SYSTEM_USER_ID`      | user ID ในระบบที่เป็น `created_by` ของ issue จาก LINE           |
-| `LINE_IMS_AUTO_SUBMIT`         | `true` = submit อัตโนมัติเมื่อฟอร์มครบ, `false` = เก็บแค่ draft |
+| `LINE_IMS_AUTO_SUBMIT`         | `true` = เมื่อ `@OA ยืนยัน` และฟอร์มครบจะ submit เข้า IMS, `false` = เก็บแค่ draft แม้ฟอร์มครบ |
 
 > `config/services.php` มี section `line.ims` อยู่แล้ว — ต้องเพิ่มค่าใน `.env.example` และสร้าง system user ใน DB
 

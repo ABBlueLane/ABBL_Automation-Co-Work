@@ -1,14 +1,14 @@
 @php
     $priorityMeta = \App\Models\Issue::getPriorityMeta($issue->priority ?? null);
-    $priorityColors = [
-        \App\Models\Issue::PRIORITY_HIGH => '#28a745',
-        \App\Models\Issue::PRIORITY_MEDIUM => '#ffc107',
-        \App\Models\Issue::PRIORITY_LOW => '#dc3545',
-    ];
     $priorityCaptions = [
-        \App\Models\Issue::PRIORITY_HIGH => 'น้อย',
-        \App\Models\Issue::PRIORITY_MEDIUM => 'กลาง',
-        \App\Models\Issue::PRIORITY_LOW => 'มาก',
+        \App\Models\Issue::PRIORITY_HIGH => 'เร่งด่วน',
+        \App\Models\Issue::PRIORITY_MEDIUM => 'ปกติ',
+        \App\Models\Issue::PRIORITY_LOW => 'ต่ำ',
+    ];
+    $priorityColors = [
+        \App\Models\Issue::PRIORITY_HIGH => '#dc3545',
+        \App\Models\Issue::PRIORITY_MEDIUM => '#ffc107',
+        \App\Models\Issue::PRIORITY_LOW => '#28a745',
     ];
     $priorityColor = $priorityColors[$issue->priority ?? ''] ?? '#6c757d';
     $priorityCaption = $priorityCaptions[$issue->priority ?? ''] ?? ($priorityMeta['label'] ?? '-');

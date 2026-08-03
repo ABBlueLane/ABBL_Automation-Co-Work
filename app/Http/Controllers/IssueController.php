@@ -41,7 +41,7 @@ class IssueController extends Controller
 
         $issue = Issue::where('id', $id)
             ->where('business_id', $business->id)
-            ->with(['firstComment', 'creator', 'assignee'])
+            ->with(['firstComment', 'creator', 'assignee', 'issueProject'])
             ->firstOrFail();
 
         if ($issue->status === Issue::STATUS_DRAFT && $issue->created_by !== Auth::id()) {
@@ -115,7 +115,7 @@ class IssueController extends Controller
                 'edit_url' => $isEditableDraft
                     ? route('issue.create', ['draft' => $issue->id])
                     : route('issue.view', [$issue->business_id, $issue->id]),
-                'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
+                'created_at_formatted' => formatThaiDate($issue->created_at),
                 'comments_count' => (int)$issue->comments_count,
                 'latest_comment' => $latestComment?->comment,
                 'latest_comment_user' => $latestComment?->user?->full_name ?? $latestComment?->user?->name ?? '-',
@@ -138,7 +138,9 @@ class IssueController extends Controller
         $isDuplicateTemplate = false;
 
         if ($request->filled('duplicate')) {
-            $issue = Issue::with(['firstComment', 'issueProject'])->findOrFail((int) $request->query('duplicate'));
+            $issue = Issue::with(['firstComment', 'issueProject'])
+                ->where('business_id', $business)
+                ->findOrFail((int) $request->query('duplicate'));
             $isDuplicateTemplate = true;
         } elseif ($request->filled('draft')) {
             $issue = Issue::with(['firstComment', 'issueProject'])
@@ -181,6 +183,7 @@ class IssueController extends Controller
 
         $request->validate([
             'issue_id' => ['nullable', 'integer', 'exists:issues,id'],
+            'draft_issue_id' => ['nullable', 'integer', 'exists:issues,id'],
             'title' => ['nullable', 'string', 'max:255'],
             'comment' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
@@ -191,7 +194,7 @@ class IssueController extends Controller
         ]);
 
         $priority = $this->resolvePriorityFromRequest($request);
-        $issueId = $request->input('issue_id');
+        $issueId = $request->input('issue_id') ?: $request->input('draft_issue_id');
         $userId = Auth::id();
 
         $issue = DB::transaction(function () use ($request, $business, $issueId, $userId, $priority) {

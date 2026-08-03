@@ -51,6 +51,57 @@ if (! function_exists('issueBusinessId')) {
     }
 }
 
+if (! function_exists('formatThaiDate')) {
+    /**
+     * Format a date with Thai month name, e.g. "3 สิงหาคม 2026".
+     */
+    function formatThaiDate(mixed $date, string $pattern = 'd M Y'): string
+    {
+        if ($date === null || $date === '') {
+            return '-';
+        }
+
+        try {
+            $carbon = $date instanceof \Carbon\CarbonInterface
+                ? $date
+                : \Carbon\Carbon::parse($date);
+        } catch (\Throwable) {
+            return '-';
+        }
+
+        $months = [
+            1 => 'มกราคม',
+            2 => 'กุมภาพันธ์',
+            3 => 'มีนาคม',
+            4 => 'เมษายน',
+            5 => 'พฤษภาคม',
+            6 => 'มิถุนายน',
+            7 => 'กรกฎาคม',
+            8 => 'สิงหาคม',
+            9 => 'กันยายน',
+            10 => 'ตุลาคม',
+            11 => 'พฤศจิกายน',
+            12 => 'ธันวาคม',
+        ];
+
+        $replacements = [
+            'd' => $carbon->format('d'),
+            'j' => (string) $carbon->day,
+            'm' => $carbon->format('m'),
+            'n' => (string) $carbon->month,
+            'Y' => $carbon->format('Y'),
+            'y' => $carbon->format('y'),
+            'H' => $carbon->format('H'),
+            'i' => $carbon->format('i'),
+            's' => $carbon->format('s'),
+            'M' => $months[(int) $carbon->month] ?? $carbon->format('M'),
+            'F' => $months[(int) $carbon->month] ?? $carbon->format('F'),
+        ];
+
+        return strtr($pattern, $replacements);
+    }
+}
+
 if (! function_exists('officeBusinessId')) {
     function officeBusinessId(): ?string
     {

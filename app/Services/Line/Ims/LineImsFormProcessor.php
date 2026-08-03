@@ -79,6 +79,14 @@ class LineImsFormProcessor
                 $files = (array) ($formState['files'] ?? []);
                 $files[] = $path;
                 $formState['files'] = $files;
+            } else {
+                $this->notifyGroup(
+                    $chatSource,
+                    'ไม่สามารถดาวน์โหลดไฟล์จาก LINE ได้ กรุณาส่งไฟล์อีกครั้ง หรือแนบลิงก์แทน',
+                    $replyToken,
+                );
+
+                return;
             }
         } elseif ($messageType === 'location') {
             $location = $event['message'] ?? [];
@@ -136,9 +144,8 @@ class LineImsFormProcessor
         $formState = $chatSource->form_state ?? LineChatSource::defaultIssueCreateFormState();
 
         if ($this->hasSubmittedInCurrentSession($formState)) {
-            $issueId = (int) ($formState['submitted_issue_id'] ?? 0);
-
-            return $issueId > 0 ? Issue::query()->find($issueId) : null;
+            // Already submitted in this session — avoid duplicate success notifications on STOP redelivery.
+            return null;
         }
 
         $chatSource = $this->ensureChatSourceConfigured($chatSource);
@@ -150,10 +157,18 @@ class LineImsFormProcessor
             return null;
         }
 
+        if (! (bool) config('services.line.ims.auto_submit', true)) {
+            $chatSource->update(['form_state' => $formState]);
+            $this->syncDraftIssue($chatSource->fresh(), $formState);
+
+            return null;
+        }
+
         $chatSource->update(['form_state' => $formState]);
         $this->syncDraftIssue($chatSource->fresh(), $formState);
 
-        return $this->attemptSubmit($chatSource->fresh(), $formState, $replyToken, $webhookEventId, notifyOnSuccess: true);
+        // Job layer owns the user-facing success/stop messages.
+        return $this->attemptSubmit($chatSource->fresh(), $formState, $replyToken, $webhookEventId, notifyOnSuccess: false);
     }
 
     /**
@@ -462,7 +477,24 @@ class LineImsFormProcessor
      */
     private function replyStatus(LineChatSource $chatSource, array $formState, ?string $replyToken): void
     {
-        $this->notifyGroup($chatSource, 'บันทึกข้อความล่าสุดแล้ว', $replyToken);
+        $missing = array_values(array_filter((array) ($formState['missing_fields'] ?? [])));
+        $message = 'บันทึกข้อความล่าสุดแล้ว';
+
+        if ($missing !== []) {
+            $labels = [
+                'title' => 'หัวข้อปัญหา',
+                'url_or_no_url' => 'ลิงก์ หรือแจ้งว่าไม่มี url',
+            ];
+            $readable = array_map(
+                static fn (string $field): string => $labels[$field] ?? $field,
+                $missing,
+            );
+            $message .= "\nยังขาด: ".implode(', ', $readable);
+        } else {
+            $message .= "\nข้อมูลครบแล้ว เมื่อพร้อม @OA แล้วพิมพ์ ยืนยัน";
+        }
+
+        $this->notifyGroup($chatSource, $message, $replyToken);
     }
 
     /**
