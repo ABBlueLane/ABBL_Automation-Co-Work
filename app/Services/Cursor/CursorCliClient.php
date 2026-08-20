@@ -15,7 +15,17 @@ class CursorCliClient
         $binary = (string) config('cursor.cli.binary', 'agent');
         $resolved = (new ExecutableFinder)->find($binary) ?? $binary;
 
-        $argv = [$resolved, '-p'];
+        $argv = [$resolved];
+
+        // Some servers expose Cursor as `cursor` (usage: `cursor agent ...`)
+        // while others provide a direct `agent` wrapper (usage: `agent -p ...`).
+        // Detect by basename and inject the `agent` subcommand when needed.
+        $base = strtolower(basename($resolved));
+        if ($base === 'cursor') {
+            $argv[] = 'agent';
+        }
+
+        $argv[] = '-p';
 
         if ((bool) config('cursor.cli.force', true)) {
             $argv[] = '--force';

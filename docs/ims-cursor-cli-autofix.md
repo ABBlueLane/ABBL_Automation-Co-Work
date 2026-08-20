@@ -1,6 +1,9 @@
 # IMS → Cursor CLI Autofix
 
-ระบบนี้เชื่อม IMS กับ **Cursor Agent CLI** (`agent`) เพื่อเริ่มแก้ปัญหาแบบอัตโนมัติเมื่อมี issue ใหม่สถานะ `pending`
+ระบบนี้เชื่อม IMS กับ **Cursor Agent CLI** ได้ทั้งสองแบบ
+- wrapper: `agent -p ...` (บาง server)
+- binary: `cursor agent -p ...` (บาง server ที่มีแค่ `cursor` binary)
+เพื่อเริ่มแก้ปัญหาแบบอัตโนมัติเมื่อมี issue ใหม่สถานะ `pending`
 
 ## พฤติกรรม
 
@@ -11,7 +14,7 @@
 4. สร้างแถวใน `cursor_autofix_runs` แล้วคิว `ProcessImsCursorAutofix`
 5. Job จะ:
    - สร้าง/สลับ git branch `cursor/ims-{issue_number}-autofix` (ถ้าเปิด)
-   - รัน `agent -p --force` ใน directory ของ repo
+ - รัน `agent -p --force` หรือ `cursor agent -p --force` ใน directory ของ repo (ขึ้นกับ `CURSOR_CLI_BINARY`)
    - บันทึก stdout/stderr
    - โพสต์คอมเมนต์สรุปกลับใน issue (ถ้าเปิด)
 
@@ -41,14 +44,14 @@ php artisan ims:cursor-autofix {issue_id} --repo=AB_Gateway --sync
 CURSOR_AUTOFIX_ENABLED=true
 CURSOR_AUTOFIX_DRY_RUN=true
 CURSOR_API_KEY=...
-CURSOR_CLI_BINARY=agent
+CURSOR_CLI_BINARY=agent  # หรือใช้ path ของ `cursor` binary หาก server ไม่มี `agent`
 CURSOR_REPOS_PATH=/var/www/repos
 CURSOR_REPO_AB_GATEWAY_PATH=AB_Gateway
 CURSOR_AUTOFIX_SYSTEM_USER_ID=1
 ```
 
 - `DRY_RUN=true` — ไม่เรียก CLI จริง แค่บันทึกว่าจะรันอะไร (ปลอดภัยสำหรับทดสอบ)
-- `DRY_RUN=false` — รัน `agent -p --force` จริง ต้องมี binary + API key + checkout ของ repo บนเครื่อง
+- `DRY_RUN=false` — รันคำสั่งจริง ต้องมี binary ที่กำหนดใน `CURSOR_CLI_BINARY` + API key + checkout ของ repo บนเครื่อง
 
 ## ข้อกำหนดบน server
 

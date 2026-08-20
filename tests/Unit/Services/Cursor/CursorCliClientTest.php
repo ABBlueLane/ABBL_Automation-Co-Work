@@ -25,4 +25,21 @@ class CursorCliClientTest extends TestCase
         $this->assertSame('fix the bug', $invocation['argv'][array_key_last($invocation['argv'])]);
         $this->assertSame('test-key', $invocation['env']['CURSOR_API_KEY']);
     }
+
+    public function test_build_invocation_inserts_agent_subcommand_when_binary_is_cursor(): void
+    {
+        config()->set('cursor.cli.binary', 'cursor');
+        config()->set('cursor.cli.force', true);
+        config()->set('cursor.cli.output_format', 'text');
+        config()->set('cursor.cli.api_key', '');
+        config()->set('cursor.cli.model', '');
+
+        $invocation = (new CursorCliClient)->buildInvocation('fix the bug', '/tmp/repo');
+
+        $this->assertContains('agent', $invocation['argv']);
+        $this->assertContains('-p', $invocation['argv']);
+        $this->assertContains('--force', $invocation['argv']);
+        $this->assertContains('--output-format', $invocation['argv']);
+        $this->assertContains('text', $invocation['argv']);
+    }
 }
