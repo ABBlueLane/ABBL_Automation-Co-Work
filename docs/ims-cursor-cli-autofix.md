@@ -7,7 +7,7 @@
 
 ## หน้า UI ในระบบ
 
-เมนู: **ตั้งค่า → Cursor Autofix**
+เมนู sidebar: **Cursor Autofix** (เมนูหลัก ถัดจาก Issue Management)
 
 | หน้า | URL | การใช้งาน |
 | --- | --- | --- |

@@ -107,6 +107,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('cursor_autofix.*') ? 'active' : '' }}" href="{{ route('cursor_autofix.index') }}">
+                                <i class="ri-robot-2-line"></i> <span>Cursor Autofix</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link menu-link {{ request()->routeIs('business.select') ? 'active' : '' }}" href="{{ route('business.select') }}">
                                 <i class="ri-briefcase-line"></i> <span>เลือกธุรกิจ</span>
                             </a>

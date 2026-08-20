@@ -133,6 +133,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('cursor_autofix.*') ? 'active' : '' }}" href="{{ route('cursor_autofix.index') }}">
+                                <i class="ri-robot-2-line"></i> <span>Cursor Autofix</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link menu-link {{ request()->routeIs('api_clients.*') ? 'active' : 'collapsed' }}" href="#sidebarSettings" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('api_clients.*') ? 'true' : 'false' }}" aria-controls="sidebarSettings">
                                 <i class="ri-settings-3-line"></i> <span>ตั้งค่า</span>
                             </a>
