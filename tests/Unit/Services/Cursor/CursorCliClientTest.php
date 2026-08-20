@@ -42,4 +42,30 @@ class CursorCliClientTest extends TestCase
         $this->assertContains('--output-format', $invocation['argv']);
         $this->assertContains('text', $invocation['argv']);
     }
+
+    public function test_ask_mode_does_not_include_force(): void
+    {
+        config()->set('cursor.cli.binary', 'agent');
+        config()->set('cursor.cli.output_format', 'text');
+        config()->set('cursor.cli.api_key', '');
+        config()->set('cursor.cli.model', '');
+
+        $invocation = (new CursorCliClient)->buildInvocation('hello', '/tmp/repo', force: false, mode: 'ask');
+
+        $this->assertContains('--mode', $invocation['argv']);
+        $this->assertContains('ask', $invocation['argv']);
+        $this->assertNotContains('--force', $invocation['argv']);
+    }
+
+    public function test_probe_reports_missing_binary(): void
+    {
+        config()->set('cursor.cli.binary', 'cursor-cli-binary-that-does-not-exist-xyz');
+        config()->set('cursor.cli.api_key', '');
+
+        $probe = (new CursorCliClient)->probeConnection('/tmp');
+
+        $this->assertFalse($probe['ok']);
+        $this->assertFalse($probe['binary_found']);
+        $this->assertStringContainsString('ไม่พบ', $probe['message']);
+    }
 }

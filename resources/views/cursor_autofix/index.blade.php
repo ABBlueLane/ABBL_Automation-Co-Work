@@ -8,7 +8,10 @@
             <h1>Cursor Autofix</h1>
             <p>ติดตามงานแก้ปัญหา IMS อัตโนมัติผ่าน Cursor CLI และสั่งรันใหม่ได้</p>
         </div>
-        <a class="button" href="{{ route('cursor_autofix.create') }}">สั่งรัน Autofix</a>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+            <a class="button secondary" href="{{ route('cursor_autofix.chat') }}">ทดสอบ CLI / แชท</a>
+            <a class="button" href="{{ route('cursor_autofix.create') }}">สั่งรัน Autofix</a>
+        </div>
     </div>
 
     @if (session('success'))

@@ -7,27 +7,61 @@ use Symfony\Component\Process\ExecutableFinder;
 
 class CursorCliClient
 {
-    /**
-     * @return array{binary: string, argv: list<string>, env: array<string, string>, cwd: string}
-     */
-    public function buildInvocation(string $prompt, string $workingDirectory): array
+    public function resolvedBinary(): string
     {
         $binary = (string) config('cursor.cli.binary', 'agent');
-        $resolved = (new ExecutableFinder)->find($binary) ?? $binary;
 
+        return (new ExecutableFinder)->find($binary) ?? $binary;
+    }
+
+    public function binaryAvailable(): bool
+    {
+        $binary = (string) config('cursor.cli.binary', 'agent');
+
+        return (new ExecutableFinder)->find($binary) !== null;
+    }
+
+    public function hasApiKey(): bool
+    {
+        return trim((string) config('cursor.cli.api_key', '')) !== '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function agentBaseArgv(): array
+    {
+        $resolved = $this->resolvedBinary();
         $argv = [$resolved];
 
-        // Some servers expose Cursor as `cursor` (usage: `cursor agent ...`)
-        // while others provide a direct `agent` wrapper (usage: `agent -p ...`).
-        // Detect by basename and inject the `agent` subcommand when needed.
-        $base = strtolower(basename($resolved));
-        if ($base === 'cursor') {
+        if (strtolower(basename($resolved)) === 'cursor') {
             $argv[] = 'agent';
         }
 
+        return $argv;
+    }
+
+    /**
+     * @return array{binary: string, argv: list<string>, env: array<string, string>, cwd: string}
+     */
+    public function buildInvocation(
+        string $prompt,
+        string $workingDirectory,
+        bool $force = true,
+        string $mode = 'agent',
+    ): array {
+        $argv = $this->agentBaseArgv();
         $argv[] = '-p';
 
-        if ((bool) config('cursor.cli.force', true)) {
+        if ($mode === 'ask') {
+            $argv[] = '--mode';
+            $argv[] = 'ask';
+        } elseif ($mode === 'plan') {
+            $argv[] = '--mode';
+            $argv[] = 'plan';
+        }
+
+        if ($force && $mode === 'agent') {
             $argv[] = '--force';
         }
 
@@ -45,16 +79,10 @@ class CursorCliClient
 
         $argv[] = $prompt;
 
-        $env = [];
-        $apiKey = trim((string) config('cursor.cli.api_key', ''));
-        if ($apiKey !== '') {
-            $env['CURSOR_API_KEY'] = $apiKey;
-        }
-
         return [
-            'binary' => $resolved,
+            'binary' => $this->resolvedBinary(),
             'argv' => $argv,
-            'env' => $env,
+            'env' => $this->cliEnv(),
             'cwd' => $workingDirectory,
         ];
     }
@@ -62,29 +90,199 @@ class CursorCliClient
     /**
      * @return array{exit_code: int, stdout: string, stderr: string, timed_out: bool, command: list<string>}
      */
-    public function run(string $prompt, string $workingDirectory, ?int $timeoutSeconds = null): array
-    {
-        $invocation = $this->buildInvocation($prompt, $workingDirectory);
+    public function run(
+        string $prompt,
+        string $workingDirectory,
+        ?int $timeoutSeconds = null,
+        bool $force = true,
+        string $mode = 'agent',
+    ): array {
+        $invocation = $this->buildInvocation($prompt, $workingDirectory, $force, $mode);
         $timeout = $timeoutSeconds ?? (int) config('cursor.autofix.timeout_seconds', 900);
 
-        $result = Process::path($workingDirectory)
-            ->timeout($timeout)
-            ->env($invocation['env'])
-            ->run($invocation['argv']);
+        try {
+            $result = Process::path($workingDirectory)
+                ->timeout($timeout)
+                ->env($invocation['env'])
+                ->run($invocation['argv']);
+
+            return [
+                'exit_code' => $result->exitCode() ?? 1,
+                'stdout' => $result->output(),
+                'stderr' => $result->errorOutput(),
+                'timed_out' => false,
+                'command' => $invocation['argv'],
+            ];
+        } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException $exception) {
+            return [
+                'exit_code' => 124,
+                'stdout' => '',
+                'stderr' => $exception->getMessage(),
+                'timed_out' => true,
+                'command' => $invocation['argv'],
+            ];
+        }
+    }
+
+    /**
+     * Lightweight connectivity / auth probe against Cursor CLI.
+     *
+     * @return array{
+     *     ok: bool,
+     *     binary_found: bool,
+     *     binary: string,
+     *     api_key_configured: bool,
+     *     version: string|null,
+     *     status_output: string|null,
+     *     ping_ok: bool|null,
+     *     ping_output: string|null,
+     *     message: string,
+     *     checks: list<array{name: string, ok: bool, detail: string}>
+     * }
+     */
+    public function probeConnection(?string $workingDirectory = null): array
+    {
+        $cwd = $workingDirectory ?: base_path();
+        $checks = [];
+        $binary = $this->resolvedBinary();
+        $binaryFound = $this->binaryAvailable();
+
+        $checks[] = [
+            'name' => 'binary',
+            'ok' => $binaryFound,
+            'detail' => $binaryFound
+                ? "พบ binary: {$binary}"
+                : 'ไม่พบ Cursor CLI binary (ตั้งค่า CURSOR_CLI_BINARY)',
+        ];
+
+        $apiKeyConfigured = $this->hasApiKey();
+        $checks[] = [
+            'name' => 'api_key',
+            'ok' => $apiKeyConfigured,
+            'detail' => $apiKeyConfigured
+                ? 'ตั้งค่า CURSOR_API_KEY แล้ว'
+                : 'ยังไม่มี CURSOR_API_KEY',
+        ];
+
+        $version = null;
+        $statusOutput = null;
+        $pingOk = null;
+        $pingOutput = null;
+
+        if ($binaryFound) {
+            $versionResult = $this->runAgentCommand(['--version'], $cwd, 20);
+            $version = trim($versionResult['stdout']."\n".$versionResult['stderr']) ?: null;
+            $checks[] = [
+                'name' => 'version',
+                'ok' => $versionResult['exit_code'] === 0 || filled($version),
+                'detail' => $version ?: 'อ่านเวอร์ชันไม่ได้',
+            ];
+
+            $statusResult = $this->runAgentCommand(['status'], $cwd, 30);
+            $statusOutput = trim($statusResult['stdout']."\n".$statusResult['stderr']) ?: null;
+            $statusOk = $statusResult['exit_code'] === 0
+                && $statusOutput !== null
+                && ! str_contains(mb_strtolower($statusOutput), 'authentication required')
+                && ! str_contains(mb_strtolower($statusOutput), 'not logged in');
+
+            $checks[] = [
+                'name' => 'auth_status',
+                'ok' => $statusOk,
+                'detail' => $statusOutput ?: ('exit '.$statusResult['exit_code']),
+            ];
+
+            if ($apiKeyConfigured || $statusOk) {
+                $ping = $this->run(
+                    'Reply with exactly: CLI_OK',
+                    $cwd,
+                    (int) config('cursor.cli.probe_timeout', 60),
+                    force: false,
+                    mode: 'ask',
+                );
+                $pingOutput = trim($ping['stdout']."\n".$ping['stderr']);
+                $pingOk = $ping['exit_code'] === 0 && str_contains($ping['stdout'], 'CLI_OK');
+                $checks[] = [
+                    'name' => 'ping',
+                    'ok' => (bool) $pingOk,
+                    'detail' => $pingOk
+                        ? 'ตอบกลับจาก agent สำเร็จ'
+                        : ($pingOutput !== '' ? $pingOutput : 'ping ไม่สำเร็จ'),
+                ];
+            }
+        }
+
+        if (! $binaryFound) {
+            $message = 'ไม่พบ Cursor CLI บนเครื่อง';
+            $ok = false;
+        } else {
+            $authOk = (bool) (collect($checks)->firstWhere('name', 'auth_status')['ok'] ?? false);
+            $pingCheckOk = (bool) (collect($checks)->firstWhere('name', 'ping')['ok'] ?? false);
+            $ok = $authOk || $pingCheckOk;
+
+            if ($ok) {
+                $message = 'เชื่อมต่อ Cursor CLI ได้';
+            } elseif (! $apiKeyConfigured && ! $authOk) {
+                $message = 'พบ CLI แล้ว แต่ยังไม่ได้ login / ยังไม่มี CURSOR_API_KEY';
+            } else {
+                $message = 'พบ CLI แล้ว แต่ทดสอบเรียก agent ยังไม่สำเร็จ';
+            }
+        }
 
         return [
-            'exit_code' => $result->exitCode() ?? 1,
-            'stdout' => $result->output(),
-            'stderr' => $result->errorOutput(),
-            'timed_out' => method_exists($result, 'failed') && $result->exitCode() === null,
-            'command' => $invocation['argv'],
+            'ok' => $ok,
+            'binary_found' => $binaryFound,
+            'binary' => $binary,
+            'api_key_configured' => $apiKeyConfigured,
+            'version' => $version,
+            'status_output' => $statusOutput,
+            'ping_ok' => $pingOk,
+            'ping_output' => $pingOutput,
+            'message' => $message,
+            'checks' => $checks,
         ];
     }
 
-    public function binaryAvailable(): bool
+    /**
+     * @param  list<string>  $args
+     * @return array{exit_code: int, stdout: string, stderr: string, command: list<string>}
+     */
+    public function runAgentCommand(array $args, string $workingDirectory, int $timeoutSeconds = 30): array
     {
-        $binary = (string) config('cursor.cli.binary', 'agent');
+        $argv = array_merge($this->agentBaseArgv(), $args);
 
-        return (new ExecutableFinder)->find($binary) !== null;
+        try {
+            $result = Process::path($workingDirectory)
+                ->timeout($timeoutSeconds)
+                ->env($this->cliEnv())
+                ->run($argv);
+
+            return [
+                'exit_code' => $result->exitCode() ?? 1,
+                'stdout' => $result->output(),
+                'stderr' => $result->errorOutput(),
+                'command' => $argv,
+            ];
+        } catch (\Throwable $exception) {
+            return [
+                'exit_code' => 1,
+                'stdout' => '',
+                'stderr' => $exception->getMessage(),
+                'command' => $argv,
+            ];
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function cliEnv(): array
+    {
+        $env = [];
+        $apiKey = trim((string) config('cursor.cli.api_key', ''));
+        if ($apiKey !== '') {
+            $env['CURSOR_API_KEY'] = $apiKey;
+        }
+
+        return $env;
     }
 }

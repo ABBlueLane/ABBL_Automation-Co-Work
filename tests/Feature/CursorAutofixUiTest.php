@@ -126,6 +126,39 @@ class CursorAutofixUiTest extends TestCase
         $response->assertRedirect(route('cursor_autofix.show', $run));
     }
 
+    public function test_chat_page_is_available(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('cursor_autofix.chat'))
+            ->assertOk()
+            ->assertSee('ทดสอบ Cursor CLI')
+            ->assertSee('ทดสอบการเชื่อมต่อ CLI');
+    }
+
+    public function test_connection_probe_endpoint(): void
+    {
+        config()->set('cursor.cli.binary', 'cursor-cli-binary-that-does-not-exist-xyz');
+
+        $this->actingAs($this->user)
+            ->postJson(route('cursor_autofix.test_connection'), [])
+            ->assertStatus(422)
+            ->assertJsonPath('ok', false)
+            ->assertJsonPath('binary_found', false);
+    }
+
+    public function test_chat_send_requires_binary(): void
+    {
+        config()->set('cursor.cli.binary', 'cursor-cli-binary-that-does-not-exist-xyz');
+
+        $this->actingAs($this->user)
+            ->postJson(route('cursor_autofix.chat.send'), [
+                'message' => 'hello',
+                'mode' => 'ask',
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('ok', false);
+    }
+
     private function createPendingIssue(?string $url): Issue
     {
         return Issue::withoutEvents(function () use ($url) {

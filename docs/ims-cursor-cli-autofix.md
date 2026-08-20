@@ -14,6 +14,11 @@
 | รายการงาน | `/cursor-autofix` | ดูสถานะรันทั้งหมด กรองตามสถานะ |
 | สั่งรัน | `/cursor-autofix/create` | ใส่ Issue ID + เลือก repo (optional) |
 | รายละเอียด | `/cursor-autofix/{id}` | ดู prompt/command/stdout/stderr และลิงก์ไปหน้า IMS |
+| ทดสอบ CLI / แชท | `/cursor-autofix/chat` | ปุ่มทดสอบการเชื่อมต่อ + แชทกับ Cursor Agent |
+
+ในหน้ารายการมีปุ่ม **ทดสอบ CLI / แชท** และในหน้าแชทมีปุ่ม **ทดสอบการเชื่อมต่อ CLI**
+- โหมดแนะนำตอนทดสอบ: `ask` (อ่านอย่างเดียว)
+- เลือก repo workspace ได้ (เช่น AB_Gateway) หรือใช้ directory ของระบบ IMS
 
 ## พฤติกรรม
 

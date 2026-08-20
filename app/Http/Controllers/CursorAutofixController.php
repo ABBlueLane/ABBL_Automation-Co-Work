@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessImsCursorAutofix;
 use App\Models\CursorAutofixRun;
 use App\Models\Issue;
+use App\Services\Cursor\CursorCliClient;
 use App\Services\Cursor\ImsCursorAutofixService;
 use App\Services\Cursor\RepoTargetResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -123,5 +125,122 @@ class CursorAutofixController extends Controller
         return redirect()
             ->route('cursor_autofix.show', $run)
             ->with('success', 'ส่งงานเข้าคิวแล้ว');
+    }
+
+    public function chat(RepoTargetResolver $repoResolver, CursorCliClient $cli): View
+    {
+        return view('cursor_autofix.chat', [
+            'repos' => $repoResolver->listRepos(),
+            'binary' => $cli->resolvedBinary(),
+            'binaryFound' => $cli->binaryAvailable(),
+            'apiKeyConfigured' => $cli->hasApiKey(),
+            'messages' => session('cursor_cli_chat', []),
+        ]);
+    }
+
+    public function testConnection(Request $request, CursorCliClient $cli, RepoTargetResolver $repoResolver): JsonResponse
+    {
+        $validated = $request->validate([
+            'repo_key' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $cwd = base_path();
+        $repoKey = trim((string) ($validated['repo_key'] ?? ''));
+        if ($repoKey !== '') {
+            $repo = $repoResolver->findByKey($repoKey);
+            if ($repo === null) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'ไม่พบ repository key ที่เลือก',
+                ], 422);
+            }
+            $cwd = $repo['path'];
+        }
+
+        $probe = $cli->probeConnection($cwd);
+
+        return response()->json($probe, $probe['ok'] ? 200 : 422);
+    }
+
+    public function chatSend(Request $request, CursorCliClient $cli, RepoTargetResolver $repoResolver): JsonResponse
+    {
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:4000'],
+            'repo_key' => ['nullable', 'string', 'max:100'],
+            'mode' => ['nullable', 'in:ask,plan,agent'],
+        ]);
+
+        if (! $cli->binaryAvailable()) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'ไม่พบ Cursor CLI binary',
+            ], 422);
+        }
+
+        $cwd = base_path();
+        $repoKey = trim((string) ($validated['repo_key'] ?? ''));
+        if ($repoKey !== '') {
+            $repo = $repoResolver->findByKey($repoKey);
+            if ($repo === null) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'ไม่พบ repository key ที่เลือก',
+                ], 422);
+            }
+            if (! is_dir($repo['path'])) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'ไม่พบ directory ของ repo: '.$repo['path'],
+                ], 422);
+            }
+            $cwd = $repo['path'];
+        }
+
+        $mode = (string) ($validated['mode'] ?? 'ask');
+        $force = $mode === 'agent';
+        $timeout = (int) config('cursor.cli.chat_timeout', 180);
+
+        $result = $cli->run($validated['message'], $cwd, $timeout, $force, $mode);
+        $reply = trim($result['stdout']);
+        if ($reply === '') {
+            $reply = trim($result['stderr']) !== ''
+                ? trim($result['stderr'])
+                : 'ไม่มีข้อความตอบกลับจาก CLI';
+        }
+
+        $history = session('cursor_cli_chat', []);
+        $history[] = [
+            'role' => 'user',
+            'content' => $validated['message'],
+            'at' => now()->toDateTimeString(),
+        ];
+        $history[] = [
+            'role' => 'assistant',
+            'content' => $reply,
+            'ok' => $result['exit_code'] === 0,
+            'mode' => $mode,
+            'repo_key' => $repoKey !== '' ? $repoKey : null,
+            'at' => now()->toDateTimeString(),
+        ];
+        $history = array_slice($history, -40);
+        session(['cursor_cli_chat' => $history]);
+
+        return response()->json([
+            'ok' => $result['exit_code'] === 0,
+            'reply' => $reply,
+            'exit_code' => $result['exit_code'],
+            'timed_out' => $result['timed_out'],
+            'command' => $result['command'],
+            'cwd' => $cwd,
+        ], $result['exit_code'] === 0 ? 200 : 422);
+    }
+
+    public function chatClear(): RedirectResponse
+    {
+        session()->forget('cursor_cli_chat');
+
+        return redirect()
+            ->route('cursor_autofix.chat')
+            ->with('success', 'ล้างประวัติแชทแล้ว');
     }
 }

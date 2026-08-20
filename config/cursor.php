@@ -29,6 +29,8 @@ return [
         'model' => env('CURSOR_CLI_MODEL'),
         'force' => (bool) env('CURSOR_CLI_FORCE', true),
         'output_format' => env('CURSOR_CLI_OUTPUT_FORMAT', 'text'),
+        'probe_timeout' => (int) env('CURSOR_CLI_PROBE_TIMEOUT', 60),
+        'chat_timeout' => (int) env('CURSOR_CLI_CHAT_TIMEOUT', 180),
     ],
 
     /*

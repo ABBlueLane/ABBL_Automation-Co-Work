@@ -138,6 +138,10 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
         Route::post('/', 'store')->name('store');
+        Route::get('/chat', 'chat')->name('chat');
+        Route::post('/chat', 'chatSend')->name('chat.send');
+        Route::post('/chat/clear', 'chatClear')->name('chat.clear');
+        Route::post('/test-connection', 'testConnection')->name('test_connection');
         Route::get('/{cursorAutofixRun}', 'show')->name('show');
     });
 
