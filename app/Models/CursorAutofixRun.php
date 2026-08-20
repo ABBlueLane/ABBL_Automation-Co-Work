@@ -50,4 +50,35 @@ class CursorAutofixRun extends Model
     {
         return $this->belongsTo(Issue::class);
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function statusOptions(): array
+    {
+        return [
+            self::STATUS_QUEUED => 'รอคิว',
+            self::STATUS_RUNNING => 'กำลังรัน',
+            self::STATUS_SUCCEEDED => 'สำเร็จ',
+            self::STATUS_FAILED => 'ล้มเหลว',
+            self::STATUS_SKIPPED => 'ข้าม',
+        ];
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::statusOptions()[$this->status] ?? (string) $this->status;
+    }
+
+    public function getStatusBadgeClassAttribute(): string
+    {
+        return match ($this->status) {
+            self::STATUS_QUEUED => 'queued',
+            self::STATUS_RUNNING => 'running',
+            self::STATUS_SUCCEEDED => 'active',
+            self::STATUS_FAILED => 'inactive',
+            self::STATUS_SKIPPED => 'skipped',
+            default => 'queued',
+        };
+    }
 }

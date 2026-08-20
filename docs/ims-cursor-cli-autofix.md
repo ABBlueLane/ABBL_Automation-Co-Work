@@ -5,6 +5,16 @@
 - binary: `cursor agent -p ...` (บาง server ที่มีแค่ `cursor` binary)
 เพื่อเริ่มแก้ปัญหาแบบอัตโนมัติเมื่อมี issue ใหม่สถานะ `pending`
 
+## หน้า UI ในระบบ
+
+เมนู: **ตั้งค่า → Cursor Autofix**
+
+| หน้า | URL | การใช้งาน |
+| --- | --- | --- |
+| รายการงาน | `/cursor-autofix` | ดูสถานะรันทั้งหมด กรองตามสถานะ |
+| สั่งรัน | `/cursor-autofix/create` | ใส่ Issue ID + เลือก repo (optional) |
+| รายละเอียด | `/cursor-autofix/{id}` | ดู prompt/command/stdout/stderr และลิงก์ไปหน้า IMS |
+
 ## พฤติกรรม
 
 1. มี IMS issue ถูกสร้าง/ส่งเป็น `pending` (จากเว็บหรือ LINE → IMS)

@@ -571,6 +571,58 @@
             </div>
         </div>
 
+        </div>
+
+        @auth
+            @if (isset($cursorAutofixRuns) && $cursorAutofixRuns->isNotEmpty())
+                <div class="review-card mb-4">
+                    <div class="card-body p-4">
+                        <div class="review-section-title mb-3 d-flex justify-content-between align-items-center">
+                            <span><i class="ri-robot-line"></i> Cursor Autofix</span>
+                            <a href="{{ route('cursor_autofix.index') }}" class="btn btn-sm btn-outline-secondary">ดูทั้งหมด</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Repo</th>
+                                        <th>สถานะ</th>
+                                        <th>Mode</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($cursorAutofixRuns as $run)
+                                        <tr>
+                                            <td>#{{ $run->id }}</td>
+                                            <td>{{ $run->repo_key ?: '-' }}</td>
+                                            <td>{{ $run->status_label }}</td>
+                                            <td>{{ $run->dry_run ? 'dry-run' : 'live' }}</td>
+                                            <td><a href="{{ route('cursor_autofix.show', $run) }}">รายละเอียด</a></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3">
+                            <a href="{{ route('cursor_autofix.create', ['issue_id' => $issue->id]) }}" class="btn btn-sm btn-primary">สั่งรัน Autofix</a>
+                        </div>
+                    </div>
+                </div>
+            @elseif (auth()->check() && $issue->status === \App\Models\Issue::STATUS_PENDING)
+                <div class="review-card mb-4">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                        <div>
+                            <div class="review-section-title mb-1"><i class="ri-robot-line"></i> Cursor Autofix</div>
+                            <div class="text-muted small">ยังไม่มีงาน Autofix สำหรับ issue นี้</div>
+                        </div>
+                        <a href="{{ route('cursor_autofix.create', ['issue_id' => $issue->id]) }}" class="btn btn-sm btn-primary">สั่งรัน Autofix</a>
+                    </div>
+                </div>
+            @endif
+        @endauth
+
         {{-- ============ DISCUSSION ============ --}}
         <div class="review-card mb-4">
             <div class="card-body p-4">
