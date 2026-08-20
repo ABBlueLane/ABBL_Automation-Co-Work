@@ -157,4 +157,9 @@ class Issue extends Model
     {
         return $this->belongsTo(IssueProject::class, 'issue_project_id')->withTrashed();
     }
+
+    public function cursorAutofixRuns()
+    {
+        return $this->hasMany(CursorAutofixRun::class);
+    }
 }

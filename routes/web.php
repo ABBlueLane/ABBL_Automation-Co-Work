@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ApiClientController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CriticalIssueController;
+use App\Http\Controllers\CursorAutofixController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueCommentController;
 use App\Http\Controllers\IssueController;
@@ -131,6 +132,17 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/', 'store')->name('store');
         Route::get('/{apiClient}/edit', 'edit')->name('edit');
         Route::put('/{apiClient}', 'update')->name('update');
+    });
+
+    Route::controller(CursorAutofixController::class)->prefix('cursor-autofix')->name('cursor_autofix.')->group(function (): void {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/chat', 'chat')->name('chat');
+        Route::post('/chat', 'chatSend')->name('chat.send');
+        Route::post('/chat/clear', 'chatClear')->name('chat.clear');
+        Route::post('/test-connection', 'testConnection')->name('test_connection');
+        Route::get('/{cursorAutofixRun}', 'show')->name('show');
     });
 
     Route::controller(UserController::class)->prefix('users')->name('users.')->group(function (): void {

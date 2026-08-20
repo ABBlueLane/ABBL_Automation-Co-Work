@@ -54,7 +54,11 @@ class IssueController extends Controller
             ->latest()
             ->paginate(5);
 
-        return view('public.issue.view', compact('issue', 'comments', 'business'));
+        $cursorAutofixRuns = Auth::check()
+            ? $issue->cursorAutofixRuns()->latest()->limit(10)->get()
+            : collect();
+
+        return view('public.issue.view', compact('issue', 'comments', 'business', 'cursorAutofixRuns'));
     }
 
     public function table(Request $request)

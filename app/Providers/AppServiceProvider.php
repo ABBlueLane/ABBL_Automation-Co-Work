@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Issue;
+use App\Observers\IssueObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,5 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         require_once app_path('Helper.php');
+
+        Issue::observe(IssueObserver::class);
     }
 }
