@@ -111,6 +111,8 @@ class ProcessLineWebhookEvent implements ShouldQueue
 
                 if ($missingNotice !== '') {
                     $stopMessage .= "\n{$missingNotice}";
+                } elseif (! (bool) config('services.line.ims.auto_submit', true)) {
+                    $stopMessage .= $this->draftOnlyStopNotice($chatSource->fresh());
                 } else {
                     $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
                 }
@@ -195,6 +197,25 @@ class ProcessLineWebhookEvent implements ShouldQueue
         return "\n(มีแบบร่างค้างอยู่: {$title})";
     }
 
+    private function draftOnlyStopNotice(LineChatSource $chatSource): string
+    {
+        $chatSource->loadMissing('draftIssue');
+        $draftId = $chatSource->draft_issue_id;
+        $base = rtrim((string) config('services.line.ims.public_base_url', config('app.url')), '/');
+
+        if ($draftId === null) {
+            return "\n(เก็บเป็นแบบร่างแล้ว — ยังไม่ได้ส่งเข้า IMS เพราะปิด auto submit)";
+        }
+
+        $editUrl = "{$base}/issue/create?draft={$draftId}";
+
+        return implode("\n", [
+            '',
+            'ข้อมูลครบแล้ว แต่ระบบตั้งค่าให้เก็บเป็นแบบร่างเท่านั้น',
+            "แก้ไข/ส่งต่อได้ที่: {$editUrl}",
+        ]);
+    }
+
     private function incompleteFormNotice(LineChatSource $chatSource): string
     {
         if ($chatSource->form_type !== LineChatSource::FORM_TYPE_ISSUE_CREATE) {
@@ -273,7 +294,13 @@ class ProcessLineWebhookEvent implements ShouldQueue
         LineMessagingClient $messagingClient,
     ): bool {
         if (($this->event['message']['type'] ?? null) !== 'text') {
-            return false;
+            $messagingClient->notifyChat(
+                $source['id'],
+                'กรุณาตอบเป็นข้อความว่า สร้าง หรือ ไม่สร้าง',
+                $this->event['replyToken'] ?? null,
+            );
+
+            return true;
         }
 
         $confirmation = $parser->parseConfirmationReply((string) ($this->event['message']['text'] ?? ''));

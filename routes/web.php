@@ -27,12 +27,15 @@ Route::controller(AuthController::class)->group(function (): void {
 Route::post('/line/webhook/{secret?}', LineWebhookController::class)
     ->name('line.webhook');
 
-Route::get('/issue/view/{id}', [IssueController::class, 'view'])
-    ->name('issue.view');
+Route::get('/issue/{business}/view/{id}', [IssueController::class, 'view'])
+    ->name('issue.view')
+    ->whereUuid('business');
 
-Route::get('/issue/{business}/view/{id}', function (string $business, int $id) {
-    return redirect()->route('issue.view', ['id' => $id], 301);
-})->whereUuid('business');
+Route::get('/issue/view/{id}', function (int $id) {
+    $issue = Issue::findOrFail($id);
+
+    return redirect()->route('issue.view', [$issue->business_id, $id], 301);
+});
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
@@ -76,9 +79,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/store-submit', [IssueController::class, 'storeAndSubmit']);
         Route::post('/{issue}/submit', [IssueController::class, 'submitDraft']);
         Route::post('/upload', [IssueController::class, 'upload']);
-        Route::get('/issue/{issue}/comments', [IssueCommentController::class, 'index']);
-        Route::post('/issue/{issue}/comment', [IssueCommentController::class, 'store']);
-        Route::post('/issue/{issue}/close', [IssueController::class, 'close']);
+        Route::get('/{issue}/comments', [IssueCommentController::class, 'index']);
+        Route::post('/{issue}/comment', [IssueCommentController::class, 'store']);
+        Route::post('/{issue}/close', [IssueController::class, 'close']);
         Route::post('/preview', [IssueController::class, 'preview']);
     });
 

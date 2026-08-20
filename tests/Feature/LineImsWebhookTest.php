@@ -366,7 +366,7 @@ class LineImsWebhookTest extends TestCase
 
     public function test_stop_command_submits_complete_form_and_keeps_draft_when_incomplete(): void
     {
-        config()->set('services.line.ims.auto_submit', false);
+        config()->set('services.line.ims.auto_submit', true);
 
         $this->startCollecting('group-ims-7');
 
@@ -410,9 +410,62 @@ class LineImsWebhookTest extends TestCase
         $this->assertNotNull($source?->form_state['submitted_issue_id'] ?? null);
     }
 
-    public function test_finish_keyword_stops_collecting(): void
+    public function test_stop_with_auto_submit_disabled_keeps_complete_form_as_draft(): void
     {
         config()->set('services.line.ims.auto_submit', false);
+        config()->set('services.line.ims.public_base_url', 'https://co-work.bluelane.co.th');
+
+        $this->startCollecting('group-ims-auto-submit-off');
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-auto-off-title',
+                    'text' => 'ปัญหาไม่ auto submit',
+                    'groupId' => 'group-ims-auto-submit-off',
+                    'messageId' => 'message-auto-off-title',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-auto-off-url',
+                    'text' => 'https://example.com/draft-only',
+                    'groupId' => 'group-ims-auto-submit-off',
+                    'messageId' => 'message-auto-off-url',
+                ]),
+            ],
+        ])->assertOk();
+
+        $this->postSignedWebhook([
+            'events' => [
+                $this->textEvent([
+                    'webhookEventId' => 'event-auto-off-stop',
+                    'text' => '@ABBL Bot ยืนยัน',
+                    'groupId' => 'group-ims-auto-submit-off',
+                    'messageId' => 'message-auto-off-stop',
+                    'mentionsSelf' => true,
+                ]),
+            ],
+        ])->assertOk();
+
+        $source = LineChatSource::query()->where('source_id', 'group-ims-auto-submit-off')->first();
+
+        $this->assertFalse((bool) $source?->is_collecting);
+        $this->assertNull($source?->form_state['submitted_issue_id'] ?? null);
+        $this->assertNotNull($source?->draft_issue_id);
+        $this->assertDatabaseHas('issues', [
+            'id' => $source?->draft_issue_id,
+            'status' => Issue::STATUS_DRAFT,
+            'title' => 'ปัญหาไม่ auto submit',
+        ]);
+    }
+
+    public function test_finish_keyword_stops_collecting(): void
+    {
+        config()->set('services.line.ims.auto_submit', true);
 
         $this->startCollecting('group-ims-finish');
 

@@ -16,7 +16,7 @@
         }
 
         body, input, select, textarea, button {
-            font-family: 'Inter', 'Sarabun', sans-serif !important;
+            font-family: 'Sarabun', 'Inter', sans-serif !important;
         }
 
         body {
@@ -24,43 +24,7 @@
         }
 
         .content-wrapper {
-            padding-bottom: 120px; /* Space for the fixed footer */
-        }
-
-        /* Header Banner redesign */
-        .header-banner-section {
-            border-bottom: 1px solid #e2e8f0;
-            padding: 24px 0;
-            margin-bottom: 30px;
-            background-color: #ffffff;
-        }
-        .header-left-bar {
-            border-left: 3px solid #cbd5e1;
-            padding-left: 16px;
-        }
-        .h-title {
-            font-size: 1.35rem;
-            font-weight: 700;
-            color: var(--text-main);
-            margin: 0;
-            line-height: 1.2;
-        }
-        .h-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin: 4px 0 0 0;
-        }
-        .breadcrumb-item a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .breadcrumb-item a:hover {
-            color: var(--primary-blue);
-        }
-        .breadcrumb-item.active {
-            color: var(--text-main);
-            font-weight: 700;
+            padding-bottom: 40px;
         }
 
         /* Stepper progress */
@@ -420,33 +384,28 @@
             padding-left: 44px !important;
         }
 
-        /* Sticky Footer Bar */
+        /* Footer Bar — attached inside main-form-card */
         .form-footer-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #ffffff;
-            border-top: 1px solid #e2e8f0;
-            padding: 16px 40px;
+            border-top: 1px solid #000000ff;
+            padding-top: 24px;
+            margin-top: 32px;
             display: flex;
             align-items: center;
-            z-index: 1000;
-            box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.03);
-            height: 72px;
+            width: 100%;
         }
         .btn-cancel {
             background-color: #e2e8f0;
             color: #475569;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-cancel:hover {
             background-color: #cbd5e1;
@@ -461,13 +420,14 @@
             background-color: var(--primary-blue);
             color: #ffffff;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-continue:hover {
             background-color: var(--primary-blue-hover);
@@ -481,13 +441,14 @@
             background-color: #10b981;
             color: #ffffff;
             border: none;
-            padding: 10px 24px;
-            border-radius: 8px;
+            padding: 12px 32px;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.15s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
         }
         .btn-success-custom:hover {
             background-color: #059669;
@@ -619,24 +580,6 @@
         }
     </style>
 
-    <!-- Header Banner -->
-    <div class="header-banner-section">
-        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="header-left-bar">
-                <h1 class="h-title">ระบบจัดการปัญหา</h1>
-                <p class="h-subtitle">สร้างรายงานปัญหาใหม่สำหรับธุรกิจของคุณ</p>
-            </div>
-            <div class="header-right-breadcrumbs">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('business.select') }}">ธุรกิจ</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('issue.index') }}">จัดการปัญหา</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">แจ้งปัญหา</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
-    </div>
 
     <div class="content-wrapper">
         <div class="container">
@@ -710,9 +653,12 @@
                             <div class="col-md-4">
                                 <label class="field-label">โปรเจค</label>
                                 @php
+                                    $currentBusiness = \App\Models\Business::find($business);
                                     $selectedIssueProjectId = old(
                                         'issue_project_id',
-                                        $issue?->issue_project_id ?? ''
+                                        $issue?->issue_project_id
+                                            ?? optional($issueProjects->firstWhere('name', $currentBusiness?->business_name))->id
+                                            ?? ''
                                     );
                                 @endphp
                                 <select name="issue_project_id" id="issue_project_id" class="input-clean select-clean">
@@ -781,49 +727,50 @@
 
                 {{-- Step 3: ผลการบันทึก + เลข IMS --}}
                 <div id="stepPanel3" class="wizard-step d-none">
-                    <div class="success-card">
-                        <div class="success-icon-wrap">
-                            <i class="ri-checkbox-circle-line"></i>
+
+                    <!-- Center Success -->
+                    <div class="text-center py-4">
+                        <div class="d-inline-flex justify-content-center align-items-center rounded-circle mb-3" style="width: 64px; height: 64px; background: linear-gradient(135deg, #34d399 0%, #10b981 100%); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);">
+                            <i class="ri-check-line" style="font-size: 32px; font-weight: bold; color: #fff !important;"></i>
                         </div>
-                        <h3 class="fw-bold text-dark mb-2">บันทึกข้อมูลสำเร็จ</h3>
-                        <p class="text-muted mb-3">รายการของคุณถูกส่งเข้าระบบเรียบร้อยแล้ว</p>
-                        <div class="mb-1 text-muted small fw-medium">เลข IMS</div>
-                        <div class="ims-badge" id="savedIssueNumber">-</div>
+                        <h3 class="fw-bold text-dark mb-2" style="font-size: 1.25rem;">บันทึกข้อมูลสำเร็จ</h3>
+                        <p class="text-muted mb-4" style="font-size: 0.9rem;">รายการของคุณถูกส่งเข้าสู่ระบบเรียบร้อย</p>
+                        <div id="savedIssueNumberBadge" class="fw-bold" style="font-size: 1.85rem; color: #475569; letter-spacing: 0.5px;">
+                            #
+                        </div>
                     </div>
-                    <div id="step3DetailBody" class="mt-4"></div>
-                    <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-                        <a href="{{ route('issue.index') }}" class="btn btn-cancel">
-                            <i class="ri-list-check me-2"></i> กลับหน้ารายการ
-                        </a>
-                        <a href="#" class="btn btn-continue" id="viewIssueBtn">
-                            <i class="ri-external-link-line me-2"></i> ดูรายละเอียด
+
+                    <!-- Detail Body -->
+                    <div id="step3DetailBody"></div>
+                    
+                    <!-- Bottom Home Button -->
+                    <div class="d-flex justify-content-end mt-4 pt-2 pb-2">
+                        <a href="{{ route('issue.index') }}" class="btn px-4 py-2 fw-medium d-flex align-items-center text-white" style="border-radius: 8px; background-color: #2563eb; border: none; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
+                            Home <i class="ri-arrow-right-line ms-2"></i>
                         </a>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Redesigned sticky footer actions -->
-    <div class="form-footer-bar">
-        <div class="container d-flex align-items-center justify-content-between">
-            <!-- Step 1 Actions -->
-            <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
-                <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
-                <span class="text-save-draft text-muted">กด Ctrl+S เพื่อบันทึกแบบร่าง</span>
-                <button type="button" class="btn btn-continue" id="reviewBtn">
-                    ถัดไป <i class="ri-arrow-right-line ms-2"></i>
-                </button>
-            </div>
-            <!-- Step 2 Actions -->
-            <div id="step2Actions" class="d-flex w-100 justify-content-between align-items-center d-none">
-                <button type="button" class="btn btn-cancel" id="reviewBackBtn">
-                    <i class="ri-arrow-left-line me-2"></i> กลับไปแก้ไข
-                </button>
-                <span></span>
-                <button type="button" class="btn btn-success-custom" id="reviewSubmitBtn">
-                    บันทึกเข้าระบบ <i class="ri-save-line ms-2"></i>
-                </button>
+                <!-- Footer actions attached directly inside card -->
+                <div class="form-footer-bar">
+                    <!-- Step 1 Actions -->
+                    <div id="step1Actions" class="d-flex w-100 justify-content-between align-items-center">
+                        <a href="{{ route('issue.index') }}" class="btn btn-cancel">ยกเลิก</a>
+                        <button type="button" class="btn btn-continue" id="reviewBtn">
+                            ถัดไป <i class="ri-arrow-right-line ms-2"></i>
+                        </button>
+                    </div>
+                    <!-- Step 2 Actions -->
+                    <div id="step2Actions" class="d-flex w-100 justify-content-between align-items-center d-none">
+                        <button type="button" class="btn btn-cancel" id="reviewBackBtn">
+                            <i class="ri-arrow-left-line me-2"></i> กลับไปแก้ไข
+                        </button>
+                        <span></span>
+                        <button type="button" class="btn btn-success-custom" id="reviewSubmitBtn">
+                            บันทึกเข้าระบบ <i class="ri-save-line ms-2"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -837,7 +784,8 @@
         const isDuplicateTemplate = @json($isDuplicateTemplate ?? false);
         const previewUrl = "{{ route('issue.preview') }}";
         const storeSubmitUrl = "{{ route('issue.store.submit') }}";
-        const submitDraftUrlTemplate = "{{ url('/issue') }}/:id/submit";
+        const draftSubmitUrlTemplate = "{{ url('/issue') }}/__DRAFT_ID__/submit";
+        const afterSubmitRedirectUrl = "{{ route('admin.issues.index') }}";
         const storageBaseUrl = @json(asset('storage'));
         let draftIssueId = $('#draftIssueId').val() || '';
         let pendingQueueAction = null;
@@ -881,17 +829,23 @@
             });
             document.getElementById('stepPanel' + step).classList.remove('d-none');
 
-            // Toggle form footer buttons
+            // Toggle form footer buttons and layouts
             if (step === 1) {
                 $('.form-footer-bar').removeClass('d-none');
                 $('#step1Actions').removeClass('d-none');
                 $('#step2Actions').addClass('d-none');
+                $('#issueStepper').removeClass('d-none');
+                $('.main-form-card').removeClass('border-0 shadow-none bg-transparent').css('padding', '');
             } else if (step === 2) {
                 $('.form-footer-bar').removeClass('d-none');
                 $('#step1Actions').addClass('d-none');
                 $('#step2Actions').removeClass('d-none');
+                $('#issueStepper').removeClass('d-none');
+                $('.main-form-card').removeClass('border-0 shadow-none bg-transparent').css('padding', '');
             } else if (step === 3) {
                 $('.form-footer-bar').addClass('d-none');
+                $('#issueStepper').addClass('d-none');
+                $('.main-form-card').removeClass('border-0 shadow-none').css({'padding': '32px 40px', 'background': '#ffffff'});
             }
 
             setActiveStep(step);
@@ -1067,6 +1021,30 @@ video/mp4,video/webm,video/quicktime,
             e.preventDefault();
         });
 
+        function normalizeOptionalUrl(raw) {
+            const value = (raw || '').trim();
+            if (!value) {
+                return '';
+            }
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) {
+                return value;
+            }
+            return 'https://' + value;
+        }
+
+        function isValidHttpUrl(raw) {
+            const value = normalizeOptionalUrl(raw);
+            if (!value) {
+                return false;
+            }
+            try {
+                const parsed = new URL(value);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
         function buildSubmitPayload() {
             let currentComment = $('#commentTextarea').val().trim();
             let allFiles = [...existingFiles, ...uploadedFiles];
@@ -1076,7 +1054,7 @@ video/mp4,video/webm,video/quicktime,
                 title: $('input[name="title"]').val().trim(),
                 priority: $('input[name="priority"]:checked').val() || '',
                 comment: currentComment,
-                url: $('#noUrlCheckbox').is(':checked') ? '' : ($('#urlInput').val() || ''),
+                url: $('#noUrlCheckbox').is(':checked') ? '' : normalizeOptionalUrl($('#urlInput').val()),
                 files: allFiles
             };
             if ($('select[name="issue_project_id"]').length) {
@@ -1102,6 +1080,9 @@ video/mp4,video/webm,video/quicktime,
                 const u = ($('#urlInput').val() || '').trim();
                 if (!u) {
                     return 'กรุณากรอกลิงก์ หรือปล่อยว่างหากไม่มีลิงก์';
+                }
+                if (!isValidHttpUrl(u)) {
+                    return 'กรุณากรอกลิงก์ให้ถูกต้อง เช่น example.com หรือ https://example.com';
                 }
             }
             return null;
@@ -1274,27 +1255,37 @@ video/mp4,video/webm,video/quicktime,
         function runFinalSubmit() {
             const payload = buildSubmitPayload();
             const submitUrl = draftIssueId
-                ? submitDraftUrlTemplate.replace(':id', draftIssueId)
+                ? draftSubmitUrlTemplate.replace('__DRAFT_ID__', draftIssueId)
                 : storeSubmitUrl;
             $.ajax({
                 url: submitUrl,
                 method: "POST",
                 data: payload,
+                dataType: 'json',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 success: function(res) {
                     Swal.close();
-                    if (res.success) {
-                        $('#savedIssueNumber').text(res.issue_number || '-');
-                        $('#step3DetailBody').html(res.html || '');
-                        if (res.redirect) {
-                            $('#viewIssueBtn').attr('href', res.redirect);
-                        }
-                        goToStep(3);
+                    if (res && res.success) {
+                        const imsNumber = res.issue_number ? '#' + res.issue_number : '';
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'บันทึกสำเร็จ',
+                            text: imsNumber ? ('สร้าง IMS ' + imsNumber + ' เรียบร้อยแล้ว') : 'สร้าง IMS เรียบร้อยแล้ว',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(function() {
+                            window.location.href = afterSubmitRedirectUrl;
+                        });
                         return;
                     }
                     Swal.fire({
                         icon: 'error',
                         title: 'เกิดข้อผิดพลาด',
-                        text: 'ไม่สามารถบันทึกข้อมูลได้'
+                        text: (res && res.message) ? res.message : 'ไม่สามารถบันทึกข้อมูลได้'
                     });
                 },
                 error: function(xhr) {

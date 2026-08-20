@@ -63,10 +63,12 @@ class IssuePublicViewTest extends TestCase
             'files' => [],
         ]);
 
-        $this->get("/issue/view/{$issue->id}")
+        $this->get("/issue/{$this->businessId}/view/{$issue->id}")
             ->assertOk()
             ->assertSee('ABBL-IMS202607-000004')
-            ->assertSee('รายละเอียดจาก LINE');
+            ->assertSee('รายละเอียดจาก LINE')
+            ->assertDontSee('id="commentForm"', false)
+            ->assertSee('เข้าสู่ระบบ');
     }
 
     public function test_table_includes_edit_url_for_draft_issue(): void
@@ -86,7 +88,7 @@ class IssuePublicViewTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.0.id', $issue->id)
-            ->assertJsonPath('data.0.view_url', route('issue.view', $issue->id))
+            ->assertJsonPath('data.0.view_url', route('issue.view', [$this->businessId, $issue->id]))
             ->assertJsonPath('data.0.edit_url', route('issue.create', ['draft' => $issue->id]));
     }
 
@@ -99,7 +101,7 @@ class IssuePublicViewTest extends TestCase
             ->assertRedirect(route('issue.index', ['business_id' => $this->businessId]));
     }
 
-    public function test_legacy_business_issue_view_redirects_to_issue_view(): void
+    public function test_legacy_issue_view_redirects_to_business_scoped_view(): void
     {
         $issue = Issue::create([
             'business_id' => $this->businessId,
@@ -110,8 +112,8 @@ class IssuePublicViewTest extends TestCase
             'created_by' => 1,
         ]);
 
-        $this->get("/issue/{$this->businessId}/view/{$issue->id}")
-            ->assertRedirect(route('issue.view', $issue->id));
+        $this->get("/issue/view/{$issue->id}")
+            ->assertRedirect(route('issue.view', [$this->businessId, $issue->id]));
     }
 
     public function test_authenticated_user_can_view_issue_index(): void
@@ -121,6 +123,6 @@ class IssuePublicViewTest extends TestCase
         $this->actingAs($user)
             ->get('/issue/my')
             ->assertOk()
-            ->assertSee('รายการ Issue ABBL Automation Co-Work');
+            ->assertSee('จัดการปัญหา');
     }
 }

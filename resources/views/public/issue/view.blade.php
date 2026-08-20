@@ -375,7 +375,7 @@
                         </p>
                     </div>
                     <div class="d-flex flex-wrap gap-2 flex-shrink-0">
-                        <a href="{{ route('issue.create') }}?draft={{ $issue->id }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ route('issue.create', ['draft' => $issue->id]) }}" class="btn btn-sm btn-outline-primary">
                             <i class="ri-edit-line me-1"></i> แก้ไขร่าง
                         </a>
                         <button type="button" class="btn btn-sm btn-success" id="submitDraftFromView">
@@ -388,7 +388,7 @@
 
         @php
             $statusMeta = \App\Models\Issue::getStatusMeta($issue->status);
-            $issueViewUrl = route('issue.view', $issue->id);
+            $issueViewUrl = route('issue.view', [$business->id, $issue->id]);
 
             $priorityBadgeStyles = [
                 \App\Models\Issue::PRIORITY_HIGH ?? 'high' => ['label' => 'เร่งด่วน', 'bg' => 'rgba(217,72,72,0.12)', 'color' => '#b83b3b', 'dot' => '#d94848'],
@@ -438,11 +438,11 @@
                         <div class="info-field-label">โปรเจค</div>
                         <div class="info-field-value">
                             <i class="ri-building-2-line me-1 text-muted"></i>
-                            {{ $issue->business?->business_name ?? '-' }}
+                            {{ $issue->issueProject?->name ?? '-' }}
                         </div>
                     </div>
                     <div class="review-info-block">
-                        <div class="info-field-label">เนื่องวันที่</div>
+                        <div class="info-field-label">เมื่อวันที่</div>
                         <div class="info-field-value">
                             {{ $issue->created_at->format('d/m/y • H:i A') }}
                         </div>
@@ -475,7 +475,7 @@
                             $statusSteps = [
                                 \App\Models\Issue::STATUS_PENDING => 'รอรีวิว',
                                 \App\Models\Issue::STATUS_IN_PROGRESS => 'กำลังดำเนินการ',
-                                'reviewing' => 'รอตรวจ',
+                                \App\Models\Issue::STATUS_WAITING_REVIEW => 'รอตรวจ',
                                 \App\Models\Issue::STATUS_CUSTOMER_REPLIED => 'ลูกค้าตอบกลับ',
                                 \App\Models\Issue::STATUS_DONE => 'ดำเนินการแล้ว',
                             ];
@@ -488,7 +488,7 @@
                             $statusMeta = [
                                 \App\Models\Issue::STATUS_PENDING => ['bg' => 'background-color: #f59e0b; color: #fff;', 'color' => '#f59e0b'],
                                 \App\Models\Issue::STATUS_IN_PROGRESS => ['bg' => 'background-color: #3b82f6; color: #fff;', 'color' => '#3b82f6'],
-                                'reviewing' => ['bg' => 'background-color: #14b8a6; color: #fff;', 'color' => '#14b8a6'],
+                                \App\Models\Issue::STATUS_WAITING_REVIEW => ['bg' => 'background-color: #14b8a6; color: #fff;', 'color' => '#14b8a6'],
                                 \App\Models\Issue::STATUS_CUSTOMER_REPLIED => ['bg' => 'background-color: #8b5cf6; color: #fff;', 'color' => '#8b5cf6'],
                                 \App\Models\Issue::STATUS_DONE => ['bg' => 'background-color: #16a34a; color: #fff;', 'color' => '#16a34a'],
                             ];
@@ -624,7 +624,7 @@
                     {{ $comments->links() }}
                 </div>
 
-                @if ($issue->status !== \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
+                @if (auth()->check() && $issue->status !== \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
                     <form id="commentForm">
                         @csrf
                         <div class="comment-compose">
@@ -659,11 +659,15 @@
                             </div>
                         </div>
                     </form>
+                @elseif (! auth()->check() && $issue->status !== \App\Models\Issue::STATUS_DONE && $issue->status !== \App\Models\Issue::STATUS_DRAFT)
+                    <div class="alert alert-light border mt-3 mb-0 small">
+                        <a href="{{ route('login') }}">เข้าสู่ระบบ</a> เพื่อแสดงความคิดเห็น
+                    </div>
                 @endif
             </div>
         </div>
 
-        <a href="{{ ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id()) ? route('issue.create') . '?draft=' . $issue->id : route('issue.index') }}"
+        <a href="{{ ($issue->status === \App\Models\Issue::STATUS_DRAFT && (int) $issue->created_by === (int) auth()->id()) ? route('issue.create', ['draft' => $issue->id]) : route('issue.index') }}"
             class="back-to-edit-btn">
             <i class="ri-arrow-left-line me-1"></i> Back to Edit
         </a>

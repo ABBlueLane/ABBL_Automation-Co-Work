@@ -35,13 +35,14 @@ class IssueController extends Controller
         return view('public.issue.index', compact('business'));
     }
 
-    public function view(int $id)
+    public function view(string $business, int $id)
     {
-        $issue = Issue::where('id', $id)
-            ->with(['firstComment', 'creator', 'assignee'])
-            ->firstOrFail();
+        $business = Business::findOrFail($business);
 
-        $business = $issue->business_id;
+        $issue = Issue::where('id', $id)
+            ->where('business_id', $business->id)
+            ->with(['firstComment', 'creator', 'assignee', 'issueProject'])
+            ->firstOrFail();
 
         if ($issue->status === Issue::STATUS_DRAFT && $issue->created_by !== Auth::id()) {
             abort(403);
@@ -110,11 +111,11 @@ class IssueController extends Controller
                 'description' => $issue->description,
                 'status' => $issue->status,
                 'priority' => $issue->priority,
-                'view_url' => route('issue.view', $issue->id),
+                'view_url' => route('issue.view', [$issue->business_id, $issue->id]),
                 'edit_url' => $isEditableDraft
                     ? route('issue.create', ['draft' => $issue->id])
-                    : route('issue.view', $issue->id),
-                'created_at_formatted' => $issue->created_at->format('d กรกฎาคม Y'),
+                    : route('issue.view', [$issue->business_id, $issue->id]),
+                'created_at_formatted' => formatThaiDate($issue->created_at),
                 'comments_count' => (int)$issue->comments_count,
                 'latest_comment' => $latestComment?->comment,
                 'latest_comment_user' => $latestComment?->user?->full_name ?? $latestComment?->user?->name ?? '-',
@@ -137,7 +138,9 @@ class IssueController extends Controller
         $isDuplicateTemplate = false;
 
         if ($request->filled('duplicate')) {
-            $issue = Issue::with(['firstComment', 'issueProject'])->findOrFail((int) $request->query('duplicate'));
+            $issue = Issue::with(['firstComment', 'issueProject'])
+                ->where('business_id', $business)
+                ->findOrFail((int) $request->query('duplicate'));
             $isDuplicateTemplate = true;
         } elseif ($request->filled('draft')) {
             $issue = Issue::with(['firstComment', 'issueProject'])
@@ -180,6 +183,7 @@ class IssueController extends Controller
 
         $request->validate([
             'issue_id' => ['nullable', 'integer', 'exists:issues,id'],
+            'draft_issue_id' => ['nullable', 'integer', 'exists:issues,id'],
             'title' => ['nullable', 'string', 'max:255'],
             'comment' => ['nullable', 'string'],
             'url' => ['nullable', 'string', 'max:2048'],
@@ -190,7 +194,7 @@ class IssueController extends Controller
         ]);
 
         $priority = $this->resolvePriorityFromRequest($request);
-        $issueId = $request->input('issue_id');
+        $issueId = $request->input('issue_id') ?: $request->input('draft_issue_id');
         $userId = Auth::id();
 
         $issue = DB::transaction(function () use ($request, $business, $issueId, $userId, $priority) {
@@ -256,7 +260,7 @@ class IssueController extends Controller
         return response()->json([
             'success' => true,
             'issue_id' => $issue->id,
-            'redirect_view' => route('issue.view', $issue->id),
+            'redirect_view' => route('issue.view', [$issue->business_id, $issue->id]),
         ]);
     }
 
@@ -298,7 +302,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', $issue->id),
+            'redirect' => route('issue.view', [$issue->business_id, $issue->id]),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
@@ -373,7 +377,7 @@ class IssueController extends Controller
 
         return response()->json([
             'success' => true,
-            'redirect' => route('issue.view', $issue->id),
+            'redirect' => route('issue.view', [$issue->business_id, $issue->id]),
             'issue_number' => $issue->issue_number,
             'issue_id' => $issue->id,
             'html' => view('public.issue.view-content', [
@@ -725,7 +729,7 @@ class IssueController extends Controller
     protected function formatIssueCardData(Issue $issue): array
     {
         $latestComment = $issue->relationLoaded('comments') ? $issue->comments->first() : null;
-        $viewUrl = route('office.issue.view', ['business' => $issue->business_id, 'id' => $issue->id]);
+        $viewUrl = route('issue.view', [$issue->business_id, $issue->id]);
 
         return [
             'id' => $issue->id,
@@ -837,9 +841,37 @@ class IssueController extends Controller
 
     protected function mergeSubmitUrlEmptyToNull(Request $request): void
     {
-        if ($request->input('url') === '') {
+        $url = $request->input('url');
+
+        if ($url === '' || $url === null) {
             $request->merge(['url' => null]);
+
+            return;
         }
+
+        if (! is_string($url)) {
+            return;
+        }
+
+        $normalized = $this->normalizeOptionalUrl($url);
+        if ($normalized !== $url) {
+            $request->merge(['url' => $normalized]);
+        }
+    }
+
+    protected function normalizeOptionalUrl(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        // Allow bare domains like "example.com" by assuming https.
+        if (! preg_match('#^[a-z][a-z0-9+.-]*://#i', $url)) {
+            $url = 'https://'.$url;
+        }
+
+        return $url;
     }
 
     protected function issueSubmitRules(): array
