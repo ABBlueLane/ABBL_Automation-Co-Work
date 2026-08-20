@@ -11,6 +11,10 @@ class CursorCliClient
     {
         $binary = (string) config('cursor.cli.binary', 'agent');
 
+        if ($this->isAbsoluteExecutable($binary)) {
+            return $binary;
+        }
+
         return (new ExecutableFinder)->find($binary) ?? $binary;
     }
 
@@ -18,7 +22,24 @@ class CursorCliClient
     {
         $binary = (string) config('cursor.cli.binary', 'agent');
 
+        if ($this->isAbsoluteExecutable($binary)) {
+            return true;
+        }
+
         return (new ExecutableFinder)->find($binary) !== null;
+    }
+
+    private function isAbsoluteExecutable(string $binary): bool
+    {
+        if ($binary === '') {
+            return false;
+        }
+
+        if (! str_starts_with($binary, DIRECTORY_SEPARATOR) && ! preg_match('#^[A-Za-z]:[\\\\/]#', $binary)) {
+            return false;
+        }
+
+        return is_file($binary) && is_executable($binary);
     }
 
     public function hasApiKey(): bool

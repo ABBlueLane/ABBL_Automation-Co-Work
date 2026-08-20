@@ -57,15 +57,20 @@ class CursorCliClientTest extends TestCase
         $this->assertNotContains('--force', $invocation['argv']);
     }
 
-    public function test_probe_reports_missing_binary(): void
+    public function test_absolute_binary_path_is_detected(): void
     {
-        config()->set('cursor.cli.binary', 'cursor-cli-binary-that-does-not-exist-xyz');
+        $tmp = sys_get_temp_dir().'/cursor-agent-fake-'.uniqid();
+        file_put_contents($tmp, "#!/bin/sh\necho ok\n");
+        chmod($tmp, 0755);
+
+        config()->set('cursor.cli.binary', $tmp);
         config()->set('cursor.cli.api_key', '');
 
-        $probe = (new CursorCliClient)->probeConnection('/tmp');
+        $cli = new CursorCliClient;
 
-        $this->assertFalse($probe['ok']);
-        $this->assertFalse($probe['binary_found']);
-        $this->assertStringContainsString('ไม่พบ', $probe['message']);
+        $this->assertTrue($cli->binaryAvailable());
+        $this->assertSame($tmp, $cli->resolvedBinary());
+
+        @unlink($tmp);
     }
 }
