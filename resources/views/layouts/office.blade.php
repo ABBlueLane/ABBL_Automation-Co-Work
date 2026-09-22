@@ -154,6 +154,11 @@
                                 <i class="ri-file-list-3-line"></i> <span>Logs</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link menu-link {{ request()->routeIs('monitor.*') ? 'active' : '' }}" href="{{ route('monitor.index') }}">
+                                <i class="ri-pulse-line"></i> <span>Uptime Monitor</span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>

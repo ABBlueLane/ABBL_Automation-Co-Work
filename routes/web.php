@@ -10,6 +10,7 @@ use App\Http\Controllers\IssueController;
 use App\Http\Controllers\IssueProjectController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\UserController;
 use App\Models\Issue;
 use Illuminate\Support\Facades\Route;
@@ -145,4 +146,14 @@ Route::middleware('auth')->group(function (): void {
     });
 
     Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
+
+    Route::prefix('monitor')->name('monitor.')->group(function (): void {
+        Route::get('/', [MonitorController::class, 'index'])->name('index');
+        Route::get('/status', [MonitorController::class, 'status'])->name('status');
+        Route::get('/incidents', [MonitorController::class, 'incidents'])->name('incidents');
+        Route::get('/stats/summary', [MonitorController::class, 'summary'])->name('stats.summary');
+        Route::get('/stats/by-hour', [MonitorController::class, 'byHour'])->name('stats.by-hour');
+        Route::post('/run-checks', [MonitorController::class, 'runChecks'])->name('run-checks');
+        Route::put('/targets/{target}', [MonitorController::class, 'updateTarget'])->name('targets.update');
+    });
 });
