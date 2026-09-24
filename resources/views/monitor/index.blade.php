@@ -3,6 +3,13 @@
 @section('title', 'Co-Work Bluelane | Uptime Monitor')
 
 @section('content')
+    @if (session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
@@ -20,6 +27,13 @@
                         <i class="ri-notification-3-line me-1"></i>
                         ตั้งค่า LINE
                     </a>
+                    <form method="POST" action="{{ route('monitor.settings.test') }}" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-soft-success" title="ส่งสถานะล่าสุดเข้ากลุ่ม LINE ที่ตั้งค่าไว้">
+                            <i class="ri-send-plane-line me-1"></i>
+                            ส่งสถานะเข้า LINE
+                        </button>
+                    </form>
                     <button type="button" class="btn btn-sm btn-primary" id="btnRunChecks">
                         <i class="ri-refresh-line me-1"></i>
                         Run Check Now

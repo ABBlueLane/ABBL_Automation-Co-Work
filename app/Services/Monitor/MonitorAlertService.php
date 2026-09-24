@@ -65,22 +65,102 @@ class MonitorAlertService
             return ['ok' => false, 'message' => 'ยังไม่ได้เลือกกลุ่ม LINE'];
         }
 
-        $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
-        $text = implode("\n", [
-            '[TEST] Uptime Monitor',
-            'ทดสอบส่งเข้ากลุ่มนี้สำเร็จ',
-            'เวลา: '.now()->timezone($timezone)->format('Y-m-d H:i:s').' '.$timezone,
-        ]);
+        $text = $this->buildLatestStatusMessage();
 
         try {
             $sent = $this->lineMessagingClient->pushText($to, $text);
 
             return $sent
-                ? ['ok' => true, 'message' => 'ส่งข้อความทดสอบเข้ากลุ่มแล้ว']
+                ? ['ok' => true, 'message' => 'ส่งสถานะ monitor ล่าสุดเข้ากลุ่มแล้ว']
                 : ['ok' => false, 'message' => 'ส่งไม่สำเร็จ — ตรวจว่า OA ยังอยู่ในกลุ่มและ token ถูกต้อง'];
         } catch (Throwable $e) {
             return ['ok' => false, 'message' => 'ส่งไม่สำเร็จ: '.$e->getMessage()];
         }
+    }
+
+    public function buildLatestStatusMessage(): string
+    {
+        $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
+        $latencyThreshold = (int) config('monitor.latency_threshold_ms', 10000);
+        $now = now()->timezone($timezone)->format('Y-m-d H:i:s').' '.$timezone;
+
+        $targets = MonitorTarget::query()->orderBy('id')->get();
+        $lines = [
+            '[STATUS] Uptime Monitor',
+            'เวลา: '.$now,
+            '',
+        ];
+
+        if ($targets->isEmpty()) {
+            $lines[] = 'ยังไม่มี target ในระบบ';
+
+            return implode("\n", $lines);
+        }
+
+        $overall = 'UP';
+
+        foreach ($targets as $target) {
+            $latestCheck = $target->checks()
+                ->orderByDesc('checked_at')
+                ->orderByDesc('id')
+                ->first();
+
+            $openIncident = $target->incidents()
+                ->where('status', MonitorIncident::STATUS_OPEN)
+                ->latest('started_at')
+                ->first();
+
+            if ($openIncident) {
+                $status = 'DOWN';
+                $overall = 'DOWN';
+            } elseif (! $target->is_active) {
+                $status = 'INACTIVE';
+            } elseif (! $latestCheck) {
+                $status = 'UNKNOWN';
+                if ($overall === 'UP') {
+                    $overall = 'UNKNOWN';
+                }
+            } elseif (! $latestCheck->ok) {
+                $status = 'DEGRADED';
+                if ($overall === 'UP') {
+                    $overall = 'DEGRADED';
+                }
+            } elseif ($latencyThreshold > 0 && (int) $latestCheck->latency_ms >= $latencyThreshold) {
+                $status = 'DEGRADED';
+                if ($overall === 'UP') {
+                    $overall = 'DEGRADED';
+                }
+            } else {
+                $status = 'UP';
+            }
+
+            $checkedAt = $latestCheck?->checked_at?->setTimezone($timezone)->format('H:i:s') ?? '-';
+            $http = $latestCheck?->http_status ?? '-';
+            $latency = $latestCheck?->latency_ms !== null ? $latestCheck->latency_ms.'ms' : '-';
+            $active = $target->is_active ? '' : ' (off)';
+
+            $lines[] = sprintf(
+                '• %s%s: %s | HTTP %s | %s | %s',
+                $target->name,
+                $active,
+                $status,
+                $http,
+                $latency,
+                $checkedAt
+            );
+
+            if ($openIncident) {
+                $started = $openIncident->started_at?->setTimezone($timezone)->format('Y-m-d H:i') ?? '-';
+                $cause = $openIncident->trigger_http_status
+                    ? 'HTTP '.$openIncident->trigger_http_status
+                    : ($openIncident->trigger_error ?: 'unknown');
+                $lines[] = '  ล่มตั้งแต่ '.$started.' ('.$cause.')';
+            }
+        }
+
+        array_splice($lines, 2, 0, 'ภาพรวม: '.$overall);
+
+        return implode("\n", $lines);
     }
 
     private function dispatch(string $event, string $targetName, string $message): bool

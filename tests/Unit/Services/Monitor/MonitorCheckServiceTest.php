@@ -133,6 +133,54 @@ class MonitorCheckServiceTest extends TestCase
         $this->assertSame(1, MonitorCheck::count());
     }
 
+    public function test_status_message_includes_latest_target_checks(): void
+    {
+        config()->set('services.line.channel_access_token', 'test-token');
+        config()->set('monitor.alerts.mail_to', []);
+
+        app(MonitorSettingsService::class)->save([
+            'alerts_enabled' => true,
+            'line_chat_source_id' => 'Cgroup1',
+        ]);
+
+        $target = MonitorTarget::create([
+            'name' => 'gateway-health',
+            'url' => 'https://gateway.example.test/up',
+            'method' => 'GET',
+            'interval_seconds' => 60,
+            'timeout_seconds' => 5,
+            'failure_threshold' => 2,
+            'success_threshold' => 1,
+            'expected_status' => [200],
+            'is_active' => true,
+        ]);
+
+        MonitorCheck::create([
+            'target_id' => $target->id,
+            'checked_at' => now(),
+            'ok' => true,
+            'http_status' => 200,
+            'latency_ms' => 123,
+            'probe_host' => 'test',
+        ]);
+
+        $line = Mockery::mock(LineMessagingClient::class);
+        $line->shouldReceive('pushText')
+            ->once()
+            ->withArgs(function (string $to, string $text): bool {
+                return $to === 'Cgroup1'
+                    && str_contains($text, '[STATUS] Uptime Monitor')
+                    && str_contains($text, 'gateway-health')
+                    && str_contains($text, 'UP')
+                    && str_contains($text, '200');
+            })
+            ->andReturn(true);
+        $this->app->instance(LineMessagingClient::class, $line);
+
+        $result = app(MonitorAlertService::class)->sendTestMessage('Cgroup1');
+        $this->assertTrue($result['ok']);
+    }
+
     public function test_alert_service_pushes_line_message(): void
     {
         config()->set('services.line.channel_access_token', 'test-token');

@@ -107,14 +107,17 @@
 
                     <hr>
 
-                    <form method="POST" action="{{ route('monitor.settings.test') }}" class="d-inline">
+                    <form id="testStatusForm" method="POST" action="{{ route('monitor.settings.test') }}" class="d-inline">
                         @csrf
-                        <input type="hidden" name="line_chat_source_id" value="{{ $selectedLineSourceId }}">
-                        <button type="submit" class="btn btn-soft-success" @disabled(! $lineTokenConfigured || ! $selectedLineSourceId)>
+                        <input type="hidden" name="line_chat_source_id" id="testLineSourceId" value="{{ $selectedLineSourceId }}">
+                        <button type="submit" class="btn btn-soft-success" id="btnSendStatus" @disabled(! $lineTokenConfigured)>
                             <i class="ri-send-plane-line me-1"></i>
-                            ส่งข้อความทดสอบเข้ากลุ่ม
+                            ส่งสถานะล่าสุดเข้ากลุ่ม
                         </button>
                     </form>
+                    <div class="form-text mt-2">
+                        จะดึงสถานะ target ล่าสุดจาก monitor แล้ว push เข้ากลุ่มที่เลือกในช่องด้านบน
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,7 +133,7 @@
                         <li class="mb-2">ส่งข้อความใดก็ได้ในกลุ่ม (เพื่อให้ webhook บันทึกกลุ่ม)</li>
                         <li class="mb-2">รีเฟรชหน้านี้ หรือกด “ดึงชื่อกลุ่มใหม่”</li>
                         <li class="mb-2">เลือกกลุ่มจากรายการ แล้วเปิดสวิตช์แจ้งเตือน</li>
-                        <li>กดส่งข้อความทดสอบเพื่อยืนยัน</li>
+                        <li>กด “ส่งสถานะล่าสุดเข้ากลุ่ม” เพื่อทดสอบ</li>
                     </ol>
 
                     <div class="alert alert-light border mb-0">
@@ -150,4 +153,18 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('script')
+    <script>
+        document.getElementById('testStatusForm')?.addEventListener('submit', function (event) {
+            const selected = document.getElementById('lineGroup')?.value || '';
+            document.getElementById('testLineSourceId').value = selected;
+
+            if (!selected) {
+                event.preventDefault();
+                Swal.fire('ยังไม่เลือกกลุ่ม', 'เลือกกลุ่ม LINE ก่อนส่งสถานะ', 'warning');
+            }
+        });
+    </script>
 @endsection

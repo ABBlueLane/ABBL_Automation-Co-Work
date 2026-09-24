@@ -78,8 +78,12 @@ class MonitorController extends Controller
         $sourceId = $request->input('line_chat_source_id') ?: $settings->lineGroupSourceId();
         $result = $alertService->sendTestMessage(is_string($sourceId) ? $sourceId : null);
 
+        $redirectTo = $request->headers->get('referer') && str_contains((string) $request->headers->get('referer'), '/monitor/settings')
+            ? route('monitor.settings')
+            : route('monitor.index');
+
         return redirect()
-            ->route('monitor.settings')
+            ->to($redirectTo)
             ->with($result['ok'] ? 'success' : 'error', $result['message']);
     }
 
