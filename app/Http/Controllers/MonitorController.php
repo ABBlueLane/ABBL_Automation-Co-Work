@@ -16,19 +16,27 @@ class MonitorController extends Controller
 {
     public function index(): View
     {
+        $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
+        $baseline = $this->resolveBaseline($timezone);
+
         return view('monitor.index', [
-            'displayTimezone' => config('monitor.timezone_display', 'Asia/Bangkok'),
+            'displayTimezone' => $timezone,
+            'baselineStartedAt' => $baseline?->setTimezone($timezone)->format('Y-m-d H:i'),
+            'checksRetentionDays' => (int) config('monitor.checks_retention_days', 90),
         ]);
     }
 
     public function status(): JsonResponse
     {
         $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
+        $latencyThreshold = (int) config('monitor.latency_threshold_ms', 10000);
         $targets = MonitorTarget::query()
             ->orderBy('id')
             ->get();
 
-        $rows = $targets->map(function (MonitorTarget $target) use ($timezone): array {
+        $latestCheckedAt = null;
+
+        $rows = $targets->map(function (MonitorTarget $target) use ($timezone, $latencyThreshold, &$latestCheckedAt): array {
             $latestCheck = MonitorCheck::query()
                 ->where('target_id', $target->id)
                 ->orderByDesc('checked_at')
@@ -41,13 +49,23 @@ class MonitorController extends Controller
                 ->latest('started_at')
                 ->first();
 
+            if ($latestCheck?->checked_at && ($latestCheckedAt === null || $latestCheck->checked_at->gt($latestCheckedAt))) {
+                $latestCheckedAt = $latestCheck->checked_at;
+            }
+
             $status = 'unknown';
             if ($openIncident) {
                 $status = 'down';
             } elseif (! $target->is_active) {
                 $status = 'inactive';
             } elseif ($latestCheck) {
-                $status = $latestCheck->ok ? 'up' : 'degraded';
+                if (! $latestCheck->ok) {
+                    $status = 'degraded';
+                } elseif ($latencyThreshold > 0 && (int) $latestCheck->latency_ms >= $latencyThreshold) {
+                    $status = 'degraded';
+                } else {
+                    $status = 'up';
+                }
             }
 
             return [
@@ -71,58 +89,48 @@ class MonitorController extends Controller
             ];
         });
 
+        $totals = $this->buildTotals($timezone);
+        $baseline = $this->resolveBaseline($timezone);
+
         return response()->json([
+            'checked_at' => $latestCheckedAt?->toIso8601String() ?? now()->toIso8601String(),
             'timezone_display' => $timezone,
+            'baseline_started_at' => $baseline?->toIso8601String(),
             'targets' => $rows,
+            'totals' => $totals,
+            'note' => ($totals['incidents_7d'] === 0 && $latestCheckedAt === null)
+                ? 'totals are 0 until history exists'
+                : null,
         ]);
     }
 
     public function summary(Request $request): JsonResponse
     {
         $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
-        $nowInTimezone = CarbonImmutable::now($timezone);
+        $range = $request->string('range')->toString() ?: '7d';
+        [$fromUtc, $toUtc] = $this->resolveRangeUtc($range, $timezone);
 
-        $todayStartUtc = $nowInTimezone->startOfDay()->utc();
-        $todayEndUtc = $nowInTimezone->endOfDay()->utc();
+        $totals = $this->buildTotals($timezone);
+        $periodSeconds = max(1, $fromUtc->diffInSeconds($toUtc));
+        $downtimeInRange = $this->sumDowntimeSeconds($fromUtc, $toUtc);
+        $uptimePercent = round(max(0, min(100, (1 - ($downtimeInRange / $periodSeconds)) * 100)), 2);
 
-        $monthStartUtc = $nowInTimezone->startOfMonth()->utc();
-        $monthEndUtc = $nowInTimezone->endOfMonth()->utc();
-
-        $sevenDaysAgoUtc = $nowInTimezone->subDays(7)->utc();
-
-        $incidentsToday = MonitorIncident::query()
-            ->where('started_at', '>=', $todayStartUtc)
-            ->where('started_at', '<=', $todayEndUtc)
-            ->count();
-
-        $incidents7d = MonitorIncident::query()
-            ->where('started_at', '>=', $sevenDaysAgoUtc)
-            ->count();
-
-        $incidentsMonth = MonitorIncident::query()
-            ->where('started_at', '>=', $monthStartUtc)
-            ->where('started_at', '<=', $monthEndUtc)
-            ->count();
-
-        $downtime7d = MonitorIncident::query()
-            ->where('started_at', '>=', $sevenDaysAgoUtc)
-            ->get()
-            ->sum(function (MonitorIncident $incident): int {
-                if ($incident->duration_seconds !== null) {
-                    return (int) $incident->duration_seconds;
-                }
-
-                return (int) max(0, $incident->started_at?->diffInSeconds(now()) ?? 0);
-            });
+        $latencyStats = MonitorCheck::query()
+            ->where('checked_at', '>=', $fromUtc)
+            ->where('checked_at', '<=', $toUtc)
+            ->whereNotNull('latency_ms')
+            ->orderBy('latency_ms')
+            ->pluck('latency_ms');
 
         return response()->json([
             'timezone_display' => $timezone,
-            'range' => $request->string('range')->toString(),
-            'totals' => [
-                'incidents_today' => $incidentsToday,
-                'incidents_7d' => $incidents7d,
-                'incidents_month' => $incidentsMonth,
-                'downtime_seconds_7d' => (int) $downtime7d,
+            'range' => $range,
+            'totals' => $totals,
+            'uptime_percent' => $uptimePercent,
+            'latency' => [
+                'p50' => $this->percentile($latencyStats->all(), 50),
+                'p95' => $this->percentile($latencyStats->all(), 95),
+                'samples' => $latencyStats->count(),
             ],
         ]);
     }
@@ -162,6 +170,7 @@ class MonitorController extends Controller
 
             return [
                 'id' => $incident->id,
+                'target_id' => $incident->target_id,
                 'target' => $incident->target?->name,
                 'status' => $incident->status,
                 'started_at' => $incident->started_at?->setTimezone($timezone)->format('Y-m-d H:i:s'),
@@ -210,15 +219,37 @@ class MonitorController extends Controller
             'count' => $count,
         ])->values();
 
+        $topHours = $series->sortByDesc('count')->take(5)->values();
+
         return response()->json([
             'range' => $request->string('range')->toString() ?: '30d',
             'timezone_display' => $timezone,
             'hours' => $series,
+            'top_hours' => $topHours,
         ]);
     }
 
     public function runChecks(Request $request, MonitorCheckService $checkService): JsonResponse
     {
+        $target = $request->string('target')->toString();
+        $results = $checkService->runChecks($target !== '' ? $target : null);
+
+        return response()->json([
+            'ok' => true,
+            'ran' => $results->count(),
+            'results' => $results,
+        ]);
+    }
+
+    public function runChecksInternal(Request $request, MonitorCheckService $checkService): JsonResponse
+    {
+        $configuredSecret = (string) config('monitor.internal_run_secret', '');
+        $providedSecret = (string) $request->header('X-Monitor-Secret', $request->input('secret', ''));
+
+        if ($configuredSecret === '' || ! hash_equals($configuredSecret, $providedSecret)) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $target = $request->string('target')->toString();
         $results = $checkService->runChecks($target !== '' ? $target : null);
 
@@ -267,6 +298,88 @@ class MonitorController extends Controller
         ]);
     }
 
+    /**
+     * @return array{incidents_today: int, incidents_7d: int, incidents_month: int, downtime_seconds_7d: int}
+     */
+    private function buildTotals(string $timezone): array
+    {
+        $nowInTimezone = CarbonImmutable::now($timezone);
+
+        $todayStartUtc = $nowInTimezone->startOfDay()->utc();
+        $todayEndUtc = $nowInTimezone->endOfDay()->utc();
+        $monthStartUtc = $nowInTimezone->startOfMonth()->utc();
+        $monthEndUtc = $nowInTimezone->endOfMonth()->utc();
+        $sevenDaysAgoUtc = $nowInTimezone->subDays(7)->utc();
+
+        return [
+            'incidents_today' => MonitorIncident::query()
+                ->where('started_at', '>=', $todayStartUtc)
+                ->where('started_at', '<=', $todayEndUtc)
+                ->count(),
+            'incidents_7d' => MonitorIncident::query()
+                ->where('started_at', '>=', $sevenDaysAgoUtc)
+                ->count(),
+            'incidents_month' => MonitorIncident::query()
+                ->where('started_at', '>=', $monthStartUtc)
+                ->where('started_at', '<=', $monthEndUtc)
+                ->count(),
+            'downtime_seconds_7d' => $this->sumDowntimeSeconds($sevenDaysAgoUtc, now()->toImmutable()),
+        ];
+    }
+
+    private function sumDowntimeSeconds(CarbonImmutable $fromUtc, CarbonImmutable|\Carbon\CarbonInterface $toUtc): int
+    {
+        $to = CarbonImmutable::parse($toUtc);
+
+        return (int) MonitorIncident::query()
+            ->where('started_at', '>=', $fromUtc)
+            ->where('started_at', '<=', $to)
+            ->get()
+            ->sum(function (MonitorIncident $incident) use ($to): int {
+                if ($incident->duration_seconds !== null) {
+                    return (int) $incident->duration_seconds;
+                }
+
+                if (! $incident->started_at) {
+                    return 0;
+                }
+
+                return (int) max(0, $incident->started_at->diffInSeconds($to));
+            });
+    }
+
+    private function resolveBaseline(string $timezone): ?CarbonImmutable
+    {
+        $configured = config('monitor.baseline_started_at');
+        if (is_string($configured) && $configured !== '') {
+            return CarbonImmutable::parse($configured, $timezone)->utc();
+        }
+
+        $earliest = MonitorCheck::query()->orderBy('checked_at')->value('checked_at');
+
+        return $earliest ? CarbonImmutable::parse($earliest) : null;
+    }
+
+    /**
+     * @param  list<int|float>  $values
+     */
+    private function percentile(array $values, float $percentile): ?int
+    {
+        $count = count($values);
+        if ($count === 0) {
+            return null;
+        }
+
+        sort($values, SORT_NUMERIC);
+        $rank = (int) ceil(($percentile / 100) * $count) - 1;
+        $rank = max(0, min($count - 1, $rank));
+
+        return (int) $values[$rank];
+    }
+
+    /**
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
     private function resolveRangeUtc(?string $range, string $timezone): array
     {
         $now = CarbonImmutable::now($timezone);

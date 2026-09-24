@@ -13,6 +13,10 @@ use Throwable;
 
 class MonitorCheckService
 {
+    public function __construct(
+        private readonly MonitorAlertService $alertService,
+    ) {}
+
     public function syncTargetsFromConfig(): void
     {
         $targets = config('monitor.targets', []);
@@ -87,7 +91,9 @@ class MonitorCheckService
 
         $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
 
-        $check = DB::transaction(function () use ($target, $checkedAt, $ok, $httpStatus, $latencyMs, $errorMessage): MonitorCheck {
+        $pendingAlerts = [];
+
+        DB::transaction(function () use ($target, $checkedAt, $ok, $httpStatus, $latencyMs, $errorMessage, &$pendingAlerts): void {
             $check = MonitorCheck::create([
                 'target_id' => $target->id,
                 'checked_at' => $checkedAt,
@@ -105,13 +111,19 @@ class MonitorCheckService
                 ->first();
 
             if ($ok) {
-                $this->handleSuccessCheck($target, $check, $openIncident);
+                $pendingAlerts = array_merge($pendingAlerts, $this->handleSuccessCheck($target, $check, $openIncident));
             } else {
-                $this->handleFailedCheck($target, $check, $openIncident);
+                $pendingAlerts = array_merge($pendingAlerts, $this->handleFailedCheck($target, $check, $openIncident));
             }
-
-            return $check;
         });
+
+        foreach ($pendingAlerts as $alert) {
+            if ($alert['type'] === 'down') {
+                $this->tryNotifyDown($alert['target'], $alert['incident']);
+            } elseif ($alert['type'] === 'recovered') {
+                $this->tryNotifyRecovered($alert['target'], $alert['incident']);
+            }
+        }
 
         return [
             'target_id' => $target->id,
@@ -125,9 +137,13 @@ class MonitorCheckService
         ];
     }
 
-    private function handleFailedCheck(MonitorTarget $target, MonitorCheck $check, ?MonitorIncident $openIncident): void
+    /**
+     * @return list<array{type: string, target: MonitorTarget, incident: MonitorIncident}>
+     */
+    private function handleFailedCheck(MonitorTarget $target, MonitorCheck $check, ?MonitorIncident $openIncident): array
     {
         $target->last_checked_at = $check->checked_at;
+        $alerts = [];
 
         if ($openIncident) {
             $openIncident->checks_failed_count += 1;
@@ -135,20 +151,23 @@ class MonitorCheckService
             $target->last_status = 'down';
             $target->save();
 
-            return;
+            if ($openIncident->notified_down_at === null) {
+                $alerts[] = ['type' => 'down', 'target' => $target, 'incident' => $openIncident];
+            }
+
+            return $alerts;
         }
 
         $consecutiveFailures = $this->countConsecutiveChecks($target->id, false, max(10, $target->failure_threshold + 3));
 
         if ($consecutiveFailures >= $target->failure_threshold) {
-            MonitorIncident::create([
+            $incident = MonitorIncident::create([
                 'target_id' => $target->id,
                 'started_at' => $check->checked_at,
                 'status' => MonitorIncident::STATUS_OPEN,
                 'trigger_http_status' => $check->http_status,
                 'trigger_error' => $check->error_message,
                 'checks_failed_count' => $consecutiveFailures,
-                'notified_down_at' => now(),
             ]);
 
             Log::warning('Monitor target is DOWN', [
@@ -159,23 +178,31 @@ class MonitorCheckService
                 'checked_at' => $check->checked_at?->toIso8601String(),
             ]);
 
+            $alerts[] = ['type' => 'down', 'target' => $target, 'incident' => $incident];
             $target->last_status = 'down';
         } else {
             $target->last_status = 'degraded';
         }
 
         $target->save();
+
+        return $alerts;
     }
 
-    private function handleSuccessCheck(MonitorTarget $target, MonitorCheck $check, ?MonitorIncident $openIncident): void
+    /**
+     * @return list<array{type: string, target: MonitorTarget, incident: MonitorIncident}>
+     */
+    private function handleSuccessCheck(MonitorTarget $target, MonitorCheck $check, ?MonitorIncident $openIncident): array
     {
         $target->last_checked_at = $check->checked_at;
-        $target->last_status = 'up';
+        $target->last_status = $this->isDegradedLatency((int) ($check->latency_ms ?? 0))
+            ? 'degraded'
+            : 'up';
 
         if (! $openIncident) {
             $target->save();
 
-            return;
+            return [];
         }
 
         $consecutiveSuccesses = $this->countConsecutiveChecks($target->id, true, max(10, $target->success_threshold + 3));
@@ -184,7 +211,7 @@ class MonitorCheckService
             $target->last_status = 'down';
             $target->save();
 
-            return;
+            return [];
         }
 
         $endedAt = $check->checked_at;
@@ -193,7 +220,6 @@ class MonitorCheckService
         $openIncident->ended_at = $endedAt;
         $openIncident->duration_seconds = $durationSeconds;
         $openIncident->status = MonitorIncident::STATUS_RESOLVED;
-        $openIncident->notified_recovered_at = now();
         $openIncident->save();
 
         Log::notice('Monitor target has recovered', [
@@ -204,8 +230,35 @@ class MonitorCheckService
             'ended_at' => $endedAt?->toIso8601String(),
         ]);
 
-        $target->last_status = 'up';
+        $target->last_status = $this->isDegradedLatency((int) ($check->latency_ms ?? 0))
+            ? 'degraded'
+            : 'up';
         $target->save();
+
+        return [['type' => 'recovered', 'target' => $target, 'incident' => $openIncident]];
+    }
+
+    private function isDegradedLatency(int $latencyMs): bool
+    {
+        $threshold = (int) config('monitor.latency_threshold_ms', 10000);
+
+        return $threshold > 0 && $latencyMs >= $threshold;
+    }
+
+    private function tryNotifyDown(MonitorTarget $target, MonitorIncident $incident): void
+    {
+        if ($this->alertService->notifyDown($target, $incident)) {
+            $incident->notified_down_at = now();
+            $incident->save();
+        }
+    }
+
+    private function tryNotifyRecovered(MonitorTarget $target, MonitorIncident $incident): void
+    {
+        if ($this->alertService->notifyRecovered($target, $incident)) {
+            $incident->notified_recovered_at = now();
+            $incident->save();
+        }
     }
 
     private function countConsecutiveChecks(int $targetId, bool $expectOk, int $limit): int

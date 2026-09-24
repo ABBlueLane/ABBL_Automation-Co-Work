@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\Monitor\MonitorCheckService;
+use App\Services\Monitor\MonitorRetentionService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -31,6 +32,21 @@ Artisan::command('monitor:run-checks {target?}', function (?string $target = nul
     $this->table(['Target', 'Result', 'HTTP', 'Latency', 'Error'], $rows);
 })->purpose('Run monitor probes and update incidents');
 
+Artisan::command('monitor:purge-checks {--days=}', function (): void {
+    $daysOption = $this->option('days');
+    $days = $daysOption !== null && $daysOption !== '' ? (int) $daysOption : null;
+
+    /** @var MonitorRetentionService $service */
+    $service = app(MonitorRetentionService::class);
+    $deleted = $service->purgeExpiredChecks($days);
+
+    $this->info("Purged {$deleted} monitor_checks row(s).");
+})->purpose('Delete old monitor_checks beyond retention window');
+
 Schedule::command('monitor:run-checks')
     ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('monitor:purge-checks')
+    ->dailyAt('03:15')
     ->withoutOverlapping();

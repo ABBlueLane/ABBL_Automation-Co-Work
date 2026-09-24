@@ -28,6 +28,9 @@ Route::controller(AuthController::class)->group(function (): void {
 Route::post('/line/webhook/{secret?}', LineWebhookController::class)
     ->name('line.webhook');
 
+Route::post('/api/internal/monitor/run-check', [MonitorController::class, 'runChecksInternal'])
+    ->name('monitor.internal.run-check');
+
 Route::get('/issue/{business}/view/{id}', [IssueController::class, 'view'])
     ->name('issue.view')
     ->whereUuid('business');

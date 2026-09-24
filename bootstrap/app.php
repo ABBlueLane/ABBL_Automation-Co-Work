@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'line/webhook',
             'line/webhook/*',
+            'api/internal/monitor/run-check',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

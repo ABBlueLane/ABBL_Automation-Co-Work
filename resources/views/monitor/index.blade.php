@@ -10,7 +10,12 @@
                     <i class="ri-pulse-line me-1"></i>
                     Uptime Monitor
                 </h4>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <small class="text-muted d-none d-md-inline">
+                        ประวัติเริ่มนับ:
+                        <span id="baselineLabel">{{ $baselineStartedAt ?: 'ยังไม่เริ่มเก็บ' }}</span>
+                        · retention {{ $checksRetentionDays }} วัน
+                    </small>
                     <button type="button" class="btn btn-sm btn-primary" id="btnRunChecks">
                         <i class="ri-refresh-line me-1"></i>
                         Run Check Now
@@ -21,7 +26,15 @@
     </div>
 
     <div class="row g-3 mb-3">
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <div class="card mb-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">สถานะปัจจุบัน</p>
+                    <h3 class="mb-0" id="kpiOverall">—</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
             <div class="card mb-0 h-100">
                 <div class="card-body">
                     <p class="text-muted mb-1">ล่มในวันนี้</p>
@@ -29,7 +42,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card mb-0 h-100">
                 <div class="card-body">
                     <p class="text-muted mb-1">ล่มใน 7 วัน</p>
@@ -37,7 +50,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card mb-0 h-100">
                 <div class="card-body">
                     <p class="text-muted mb-1">ล่มในเดือนนี้</p>
@@ -45,11 +58,20 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <div class="card mb-0 h-100">
                 <div class="card-body">
-                    <p class="text-muted mb-1">Downtime รวม 7 วัน</p>
+                    <p class="text-muted mb-1">Downtime 7 วัน</p>
                     <h3 class="mb-0" id="kpiDowntime7d">0 นาที</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card mb-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted mb-1">Uptime 7 วัน</p>
+                    <h3 class="mb-0" id="kpiUptime">—</h3>
+                    <small class="text-muted" id="kpiLatency">latency —</small>
                 </div>
             </div>
         </div>
@@ -96,6 +118,7 @@
                     <div class="alert alert-light border mt-3 mb-0">
                         <div class="fw-semibold" id="hourlyInsightTitle">ไม่มีประวัติระบบล่มในช่วง 24 ชั่วโมงที่ผ่านมา</div>
                         <div class="text-muted small" id="hourlyInsightDesc">บริการทั้งหมดตอบสนองตามเกณฑ์มาตรฐาน SLA</div>
+                        <div class="text-muted small mt-1" id="hourlyTopHours"></div>
                     </div>
                 </div>
             </div>
@@ -106,6 +129,35 @@
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="card-title mb-0">Incident ล่าสุด</h5>
             <small class="text-muted">Timezone: {{ $displayTimezone }}</small>
+        </div>
+        <div class="card-body border-bottom">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label mb-1">จากวันที่</label>
+                    <input type="date" class="form-control form-control-sm" id="filterFrom">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label mb-1">ถึงวันที่</label>
+                    <input type="date" class="form-control form-control-sm" id="filterTo">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">Target</label>
+                    <select class="form-select form-select-sm" id="filterTarget">
+                        <option value="">ทั้งหมด</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label mb-1">สถานะ</label>
+                    <select class="form-select form-select-sm" id="filterStatus">
+                        <option value="">ทั้งหมด</option>
+                        <option value="open">open</option>
+                        <option value="resolved">resolved</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-soft-primary w-100" id="btnApplyIncidentFilter">กรอง</button>
+                </div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -231,12 +283,29 @@
             return `${s}s`;
         }
 
+        function overallStatusLabel(targets) {
+            const active = (targets || []).filter(t => t.is_active);
+            if (active.length === 0) return 'UNKNOWN';
+            if (active.some(t => t.status === 'down')) return 'DOWN';
+            if (active.some(t => t.status === 'degraded')) return 'DEGRADED';
+            if (active.every(t => t.status === 'up')) return 'UP';
+            return 'UNKNOWN';
+        }
+
         async function loadSummary() {
-            const res = await $.getJSON(monitorRoutes.summary);
+            const res = await $.getJSON(monitorRoutes.summary, { range: '7d' });
             $('#kpiToday').text(res.totals.incidents_today ?? 0);
             $('#kpi7d').text(res.totals.incidents_7d ?? 0);
             $('#kpiMonth').text(res.totals.incidents_month ?? 0);
             $('#kpiDowntime7d').text(formatDuration(res.totals.downtime_seconds_7d ?? 0));
+            $('#kpiUptime').text((res.uptime_percent ?? 0) + '%');
+            const p50 = res.latency?.p50;
+            const p95 = res.latency?.p95;
+            $('#kpiLatency').text(
+                p50 != null || p95 != null
+                    ? `p50 ${p50 ?? '—'} / p95 ${p95 ?? '—'} ms`
+                    : 'latency —'
+            );
         }
 
         async function loadStatus() {
@@ -245,8 +314,20 @@
             let activeCount = 0;
             let upCount = 0;
 
+            if (res.baseline_started_at) {
+                const baselineLocal = (res.baseline_started_at || '').replace('T', ' ').slice(0, 16);
+                if (baselineLocal) {
+                    $('#baselineLabel').text(baselineLocal);
+                }
+            }
+
+            const $filterTarget = $('#filterTarget');
+            const previousTarget = $filterTarget.val();
+            $filterTarget.find('option:not([value=""])').remove();
+
             const rows = (res.targets || []).map(function(item) {
                 targetMap[item.id] = item;
+                $filterTarget.append(`<option value="${item.id}">${item.name}</option>`);
                 const expectedStatusText = (item.expected_status || []).join(', ');
                 if (item.is_active) activeCount++;
                 if (item.status === 'up') upCount++;
@@ -274,6 +355,8 @@
                 `;
             }).join('');
 
+            $filterTarget.val(previousTarget || '');
+            $('#kpiOverall').text(overallStatusLabel(res.targets || []));
             $('#statusRows').html(rows || '<tr><td colspan="6" class="text-center text-muted">ยังไม่มีข้อมูล</td></tr>');
             $('#targetCountBadge').text(`${activeCount} Endpoints`);
             $('#statusFooterText').text(`แสดงทั้งหมด ${activeCount} รายการที่กำลังทำงาน`);
@@ -301,7 +384,17 @@
         }
 
         async function loadIncidents() {
-            const res = await $.getJSON(monitorRoutes.incidents);
+            const params = {};
+            const from = $('#filterFrom').val();
+            const to = $('#filterTo').val();
+            const targetId = $('#filterTarget').val();
+            const status = $('#filterStatus').val();
+            if (from) params.from = from;
+            if (to) params.to = to;
+            if (targetId) params.target_id = targetId;
+            if (status) params.status = status;
+
+            const res = await $.getJSON(monitorRoutes.incidents, params);
             const rows = (res.items || []).map(function(item) {
                 const errorText = item.trigger_http_status ? `HTTP ${item.trigger_http_status}` : (item.trigger_error || '-');
                 return `
@@ -324,13 +417,19 @@
             const categories = (res.hours || []).map(x => String(x.hour).padStart(2, '0') + ':00');
             const values = (res.hours || []).map(x => x.count);
             const totalFailures = values.reduce((sum, val) => sum + Number(val || 0), 0);
+            const top = (res.top_hours || []).filter(x => Number(x.count) > 0).slice(0, 5);
+            $('#hourlyTopHours').text(
+                top.length
+                    ? 'Top hours: ' + top.map(x => String(x.hour).padStart(2, '0') + ':00 (' + x.count + ')').join(', ')
+                    : ''
+            );
 
             $('#hourlyStatusLabel').text(totalFailures > 0 ? `${totalFailures} Failures` : 'Zero Failures');
             $('#hourlyInsightTitle').text(totalFailures > 0
                 ? 'พบประวัติระบบล่มในช่วง 30 วันที่ผ่านมา'
-                : 'ไม่มีประวัติระบบล่มในช่วง 24 ชั่วโมงที่ผ่านมา');
+                : 'ไม่มีประวัติระบบล่มในช่วง 30 วันที่ผ่านมา');
             $('#hourlyInsightDesc').text(totalFailures > 0
-                ? 'ควรตรวจสอบช่วงเวลาที่เกิดซ้ำเพื่อวางแผนป้องกัน'
+                ? 'ควรตรวจสอบช่วงเวลาที่เกิดซ้ำเพื่อวางแผนป้องกัน (โดยเฉพาะกลางคืน)'
                 : 'บริการทั้งหมดตอบสนองตามเกณฑ์มาตรฐาน SLA');
 
             if (hourlyChart) {
@@ -365,6 +464,12 @@
             setInterval(function() {
                 reloadAll().catch(function() {});
             }, 60000);
+
+            $('#btnApplyIncidentFilter').on('click', function() {
+                loadIncidents().catch(function() {
+                    Swal.fire('ผิดพลาด', 'กรอง incident ไม่สำเร็จ', 'error');
+                });
+            });
 
             $('#btnRunChecks').on('click', async function() {
                 const $btn = $(this);
