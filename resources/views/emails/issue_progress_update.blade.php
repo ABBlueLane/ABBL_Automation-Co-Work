@@ -180,7 +180,7 @@
                                             <p style="margin: 0 0 4px; color: #878a99; font-size: 14px;">
                                                 ขอแสดงความนับถือ</p>
                                             <p style="margin: 0; font-weight: 600; color: #495057; font-size: 15px;">
-                                                {{ $details['business_name'] ?? 'OneClick' }}</p>
+                                                {{ $details['business_name'] ?? 'Co-Work Bluelane' }}</p>
                                         </td>
                                     </tr>
                                 </table>
@@ -191,7 +191,7 @@
                     <div style="text-align: center; margin: 0 auto;">
                         <p
                             style="font-family: 'Noto Sans Thai', sans-serif; font-size: 14px; color: #595f63; margin: 0; padding-top: 25px;">
-                            2024 OneClick. Design & Develop by BlueLane
+                            2024 Co-Work Bluelane. Design & Develop by BlueLane
                         </p>
                     </div>
                 </div>

@@ -5,15 +5,70 @@ namespace App\Http\Controllers;
 use App\Models\MonitorCheck;
 use App\Models\MonitorIncident;
 use App\Models\MonitorTarget;
+use App\Services\Monitor\MonitorAlertService;
 use App\Services\Monitor\MonitorCheckService;
+use App\Services\Monitor\MonitorSettingsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class MonitorController extends Controller
 {
+    public function settings(MonitorSettingsService $settings): View
+    {
+        return view('monitor.settings', [
+            'displayTimezone' => config('monitor.timezone_display', 'Asia/Bangkok'),
+            'alertsEnabled' => $settings->alertsEnabled(),
+            'selectedLineSourceId' => $settings->lineGroupSourceId(),
+            'lineGroups' => $settings->availableLineGroups(),
+            'lineTokenConfigured' => $settings->lineTokenConfigured(),
+            'selectedGroup' => $settings->selectedLineGroup(),
+        ]);
+    }
+
+    public function updateSettings(Request $request, MonitorSettingsService $settings): RedirectResponse
+    {
+        $validated = $request->validate([
+            'alerts_enabled' => ['nullable', 'boolean'],
+            'line_chat_source_id' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $sourceId = $validated['line_chat_source_id'] ?? null;
+        if (is_string($sourceId) && $sourceId !== '') {
+            $exists = $settings->availableLineGroups()->contains(
+                fn ($group): bool => $group->source_id === $sourceId
+            );
+
+            if (! $exists) {
+                return back()->withErrors([
+                    'line_chat_source_id' => 'กลุ่มที่เลือกยังไม่อยู่ในรายการ — เชิญ OA เข้ากลุ่มแล้วให้มีข้อความเข้ามาก่อน',
+                ])->withInput();
+            }
+        }
+
+        $settings->save([
+            'alerts_enabled' => $request->boolean('alerts_enabled'),
+            'line_chat_source_id' => $sourceId ?: null,
+        ]);
+
+        return redirect()
+            ->route('monitor.settings')
+            ->with('success', 'บันทึกการตั้งค่าแจ้งเตือนแล้ว');
+    }
+
+    public function sendTestAlert(Request $request, MonitorAlertService $alertService, MonitorSettingsService $settings): RedirectResponse
+    {
+        $sourceId = $request->input('line_chat_source_id') ?: $settings->lineGroupSourceId();
+        $result = $alertService->sendTestMessage(is_string($sourceId) ? $sourceId : null);
+
+        return redirect()
+            ->route('monitor.settings')
+            ->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
     public function index(): View
     {
         $timezone = config('monitor.timezone_display', 'Asia/Bangkok');

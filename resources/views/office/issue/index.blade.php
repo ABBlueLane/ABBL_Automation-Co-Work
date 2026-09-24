@@ -1,5 +1,5 @@
 @extends('layouts.office')
-@section('title', 'OneClick | Issue Management System')
+@section('title', 'Co-Work Bluelane | Issue Management System')
 
 @section('content')
 

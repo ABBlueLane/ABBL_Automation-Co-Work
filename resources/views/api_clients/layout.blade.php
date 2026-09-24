@@ -2,7 +2,7 @@
 <html lang="th" data-layout="vertical" data-layout-style="default" data-layout-position="fixed" data-topbar="light" data-sidebar="dark" data-sidebar-size="sm-hover" data-layout-width="fluid">
 <head>
     <meta charset="utf-8">
-    <title>@yield('title', 'API Clients')</title>
+    <title>@yield('title', 'Co-Work Bluelane')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="ABBL Automation" name="description">
 
@@ -274,41 +274,7 @@
             <div id="scrollbar">
                 <div class="container-fluid">
                     <div id="two-column-menu"></div>
-                    <ul class="navbar-nav" id="navbar-nav">
-                        <li class="menu-title"><span>Menu</span></li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                                <i class="ri-dashboard-line"></i> <span>Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('api_clients.*') ? 'active' : 'collapsed' }}" href="#sidebarSettings" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('api_clients.*') ? 'true' : 'false' }}" aria-controls="sidebarSettings">
-                                <i class="ri-settings-3-line"></i> <span>ตั้งค่า</span>
-                            </a>
-                            <div class="collapse menu-dropdown {{ request()->routeIs('api_clients.*') ? 'show' : '' }}" id="sidebarSettings">
-                                <ul class="nav nav-sm flex-column">
-                                    <li class="nav-item">
-                                        <a href="{{ route('api_clients.index') }}" class="nav-link {{ request()->routeIs('api_clients.*') ? 'active' : '' }}">API Clients</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
-                                <i class="ri-user-settings-line"></i> <span>Users</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('logs.*') ? 'active' : '' }}" href="{{ route('logs.index') }}">
-                                <i class="ri-file-list-3-line"></i> <span>Logs</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link menu-link {{ request()->routeIs('admin.issues.*') ? 'active' : '' }}" href="{{ route('admin.issues.index') }}">
-                                <i class="ri-bug-line"></i> <span>Issue Management</span>
-                            </a>
-                        </li>
-                    </ul>
+                    @include('partials.app-sidebar-nav')
                 </div>
             </div>
 
@@ -331,7 +297,7 @@
                             {{ date('Y') }} © ABBL Automation
                         </div>
                         <div class="col-sm-6">
-                            <div class="text-sm-end d-none d-sm-block">OneClick Template</div>
+                            <div class="text-sm-end d-none d-sm-block">Co-Work Bluelane Template</div>
                         </div>
                     </div>
                 </div>

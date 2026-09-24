@@ -152,6 +152,9 @@ Route::middleware('auth')->group(function (): void {
 
     Route::prefix('monitor')->name('monitor.')->group(function (): void {
         Route::get('/', [MonitorController::class, 'index'])->name('index');
+        Route::get('/settings', [MonitorController::class, 'settings'])->name('settings');
+        Route::put('/settings', [MonitorController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/settings/test-alert', [MonitorController::class, 'sendTestAlert'])->name('settings.test');
         Route::get('/status', [MonitorController::class, 'status'])->name('status');
         Route::get('/incidents', [MonitorController::class, 'incidents'])->name('incidents');
         Route::get('/stats/summary', [MonitorController::class, 'summary'])->name('stats.summary');

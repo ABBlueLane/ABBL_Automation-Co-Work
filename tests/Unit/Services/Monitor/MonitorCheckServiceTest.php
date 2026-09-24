@@ -9,6 +9,7 @@ use App\Services\Line\LineMessagingClient;
 use App\Services\Monitor\MonitorAlertService;
 use App\Services\Monitor\MonitorCheckService;
 use App\Services\Monitor\MonitorRetentionService;
+use App\Services\Monitor\MonitorSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -134,9 +135,12 @@ class MonitorCheckServiceTest extends TestCase
 
     public function test_alert_service_pushes_line_message(): void
     {
-        config()->set('monitor.alerts.enabled', true);
-        config()->set('monitor.alerts.line_to', 'U123');
-        config()->set('monitor.alerts.mail_to', []);
+        config()->set('services.line.channel_access_token', 'test-token');
+
+        app(MonitorSettingsService::class)->save([
+            'alerts_enabled' => true,
+            'line_chat_source_id' => 'U123',
+        ]);
 
         $line = Mockery::mock(LineMessagingClient::class);
         $line->shouldReceive('pushText')

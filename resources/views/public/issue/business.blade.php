@@ -1,5 +1,5 @@
 @extends('layouts.public')
-@section('title', 'Select Business | OneClick')
+@section('title', 'Select Business | Co-Work Bluelane')
 @section('navbar_container', 'container')
 
 @section('content')

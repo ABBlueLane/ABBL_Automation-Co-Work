@@ -1,6 +1,6 @@
 @extends('layouts.office')
 
-@section('title', 'OneClick | Uptime Monitor')
+@section('title', 'Co-Work Bluelane | Uptime Monitor')
 
 @section('content')
     <div class="row">
@@ -16,6 +16,10 @@
                         <span id="baselineLabel">{{ $baselineStartedAt ?: 'ยังไม่เริ่มเก็บ' }}</span>
                         · retention {{ $checksRetentionDays }} วัน
                     </small>
+                    <a href="{{ route('monitor.settings') }}" class="btn btn-sm btn-soft-secondary">
+                        <i class="ri-notification-3-line me-1"></i>
+                        ตั้งค่า LINE
+                    </a>
                     <button type="button" class="btn btn-sm btn-primary" id="btnRunChecks">
                         <i class="ri-refresh-line me-1"></i>
                         Run Check Now

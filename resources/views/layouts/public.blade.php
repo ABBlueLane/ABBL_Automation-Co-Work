@@ -2,7 +2,7 @@
 <html lang="th" data-layout="vertical" data-layout-style="default" data-layout-position="fixed" data-topbar="light" data-sidebar="dark" data-sidebar-size="sm-hover" data-layout-width="fluid">
 <head>
     <meta charset="utf-8">
-    <title>@yield('title', 'IMS')</title>
+    <title>@yield('title', 'Co-Work Bluelane')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta content="ABBL Automation" name="description">
@@ -156,7 +156,7 @@
                             {{ date('Y') }} © ABBL Automation
                         </div>
                         <div class="col-sm-6">
-                            <div class="text-sm-end d-none d-sm-block">OneClick Template</div>
+                            <div class="text-sm-end d-none d-sm-block">Co-Work Bluelane Template</div>
                         </div>
                     </div>
                 </div>

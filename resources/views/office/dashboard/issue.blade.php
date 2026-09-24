@@ -1,5 +1,5 @@
 @extends('layouts.office')
-@section('title', 'OneClick | Issue Management Dashboard')
+@section('title', 'Co-Work Bluelane | Issue Management Dashboard')
 @section('css')
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" rel="stylesheet">
 @endsection

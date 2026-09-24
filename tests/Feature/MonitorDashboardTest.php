@@ -54,6 +54,17 @@ class MonitorDashboardTest extends TestCase
             ->assertJsonStructure(['uptime_percent', 'latency' => ['p50', 'p95', 'samples']]);
     }
 
+    public function test_authenticated_user_can_open_settings_page(): void
+    {
+        $user = User::factory()->create(['status' => 'active']);
+
+        $this->actingAs($user)
+            ->get(route('monitor.settings'))
+            ->assertOk()
+            ->assertSee('ตั้งค่าแจ้งเตือน')
+            ->assertSee('LINE_CHANNEL_ACCESS_TOKEN');
+    }
+
     public function test_internal_run_check_requires_secret(): void
     {
         config()->set('monitor.internal_run_secret', 'test-secret');

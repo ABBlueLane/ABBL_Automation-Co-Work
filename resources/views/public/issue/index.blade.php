@@ -1,5 +1,5 @@
 @extends('layouts.public')
-@section('title', 'OneClick | Issue Management')
+@section('title', 'Co-Work Bluelane | Issue Management')
 @section('navbar_container', 'container-fluid')
 
 @section('css')

@@ -13,6 +13,7 @@ class MonitorAlertService
 {
     public function __construct(
         private readonly LineMessagingClient $lineMessagingClient,
+        private readonly MonitorSettingsService $settings,
     ) {}
 
     public function notifyDown(MonitorTarget $target, MonitorIncident $incident): bool
@@ -52,9 +53,39 @@ class MonitorAlertService
         return $this->dispatch('RECOVERED', $target->name, $message);
     }
 
+    public function sendTestMessage(?string $lineTo = null): array
+    {
+        $to = $lineTo ?: $this->settings->lineGroupSourceId();
+
+        if (! $this->settings->lineTokenConfigured()) {
+            return ['ok' => false, 'message' => 'ยังไม่ได้ตั้ง LINE_CHANNEL_ACCESS_TOKEN ใน .env'];
+        }
+
+        if ($to === null || $to === '') {
+            return ['ok' => false, 'message' => 'ยังไม่ได้เลือกกลุ่ม LINE'];
+        }
+
+        $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
+        $text = implode("\n", [
+            '[TEST] Uptime Monitor',
+            'ทดสอบส่งเข้ากลุ่มนี้สำเร็จ',
+            'เวลา: '.now()->timezone($timezone)->format('Y-m-d H:i:s').' '.$timezone,
+        ]);
+
+        try {
+            $sent = $this->lineMessagingClient->pushText($to, $text);
+
+            return $sent
+                ? ['ok' => true, 'message' => 'ส่งข้อความทดสอบเข้ากลุ่มแล้ว']
+                : ['ok' => false, 'message' => 'ส่งไม่สำเร็จ — ตรวจว่า OA ยังอยู่ในกลุ่มและ token ถูกต้อง'];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'message' => 'ส่งไม่สำเร็จ: '.$e->getMessage()];
+        }
+    }
+
     private function dispatch(string $event, string $targetName, string $message): bool
     {
-        if (! (bool) config('monitor.alerts.enabled', true)) {
+        if (! $this->settings->alertsEnabled()) {
             Log::info('Monitor alert skipped (disabled).', [
                 'event' => $event,
                 'target' => $targetName,
@@ -63,7 +94,7 @@ class MonitorAlertService
             return true;
         }
 
-        $lineTo = trim((string) config('monitor.alerts.line_to', ''));
+        $lineTo = $this->settings->lineGroupSourceId() ?? '';
         /** @var list<string> $mailTo */
         $mailTo = config('monitor.alerts.mail_to', []);
 
@@ -82,16 +113,23 @@ class MonitorAlertService
         $sent = false;
 
         if ($lineTo !== '') {
-            try {
-                if ($this->lineMessagingClient->pushText($lineTo, $message)) {
-                    $sent = true;
-                }
-            } catch (Throwable $e) {
-                Log::warning('Monitor LINE alert failed.', [
+            if (! $this->settings->lineTokenConfigured()) {
+                Log::warning('Monitor LINE alert skipped: missing channel access token.', [
                     'event' => $event,
                     'target' => $targetName,
-                    'error' => $e->getMessage(),
                 ]);
+            } else {
+                try {
+                    if ($this->lineMessagingClient->pushText($lineTo, $message)) {
+                        $sent = true;
+                    }
+                } catch (Throwable $e) {
+                    Log::warning('Monitor LINE alert failed.', [
+                        'event' => $event,
+                        'target' => $targetName,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
         }
 

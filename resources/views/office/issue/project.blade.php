@@ -1,5 +1,5 @@
 @extends('layouts.office')
-@section('title', 'OneClick | โปรเจค Issue')
+@section('title', 'Co-Work Bluelane | โปรเจค Issue')
 
 @section('content')
     <div class="row">
