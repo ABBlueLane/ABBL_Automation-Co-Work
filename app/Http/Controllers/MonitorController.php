@@ -19,14 +19,28 @@ class MonitorController extends Controller
 {
     public function settings(MonitorSettingsService $settings): View
     {
+        $lineGroups = $settings->availableLineGroups(refreshNames: true);
+
         return view('monitor.settings', [
             'displayTimezone' => config('monitor.timezone_display', 'Asia/Bangkok'),
             'alertsEnabled' => $settings->alertsEnabled(),
             'selectedLineSourceId' => $settings->lineGroupSourceId(),
-            'lineGroups' => $settings->availableLineGroups(),
+            'lineGroups' => $lineGroups,
             'lineTokenConfigured' => $settings->lineTokenConfigured(),
             'selectedGroup' => $settings->selectedLineGroup(),
+            'botDisplayName' => $settings->botDisplayName(),
         ]);
+    }
+
+    public function refreshLineGroups(MonitorSettingsService $settings): RedirectResponse
+    {
+        $updated = $settings->refreshGroupDisplayNames(force: true);
+
+        return redirect()
+            ->route('monitor.settings')
+            ->with('success', $updated > 0
+                ? "อัปเดตชื่อกลุ่มแล้ว {$updated} รายการ"
+                : 'ยังอัปเดตชื่อกลุ่มไม่ได้ — ตรวจ token หรือว่า OA ยังอยู่ในกลุ่ม');
     }
 
     public function updateSettings(Request $request, MonitorSettingsService $settings): RedirectResponse

@@ -58,11 +58,24 @@ class MonitorDashboardTest extends TestCase
     {
         $user = User::factory()->create(['status' => 'active']);
 
+        config()->set('services.line.channel_access_token', 'test-token');
+        \Illuminate\Support\Facades\Http::fake([
+            'https://api.line.me/v2/bot/info' => \Illuminate\Support\Facades\Http::response([
+                'displayName' => 'Test OA',
+                'userId' => 'U1',
+            ]),
+            'https://api.line.me/v2/bot/group/*/summary' => \Illuminate\Support\Facades\Http::response([
+                'groupId' => 'C1',
+                'groupName' => 'Ops',
+            ]),
+        ]);
+
         $this->actingAs($user)
             ->get(route('monitor.settings'))
             ->assertOk()
             ->assertSee('ตั้งค่าแจ้งเตือน')
-            ->assertSee('LINE_CHANNEL_ACCESS_TOKEN');
+            ->assertSee('LINE_CHANNEL_ACCESS_TOKEN')
+            ->assertSee('Test OA');
     }
 
     public function test_internal_run_check_requires_secret(): void

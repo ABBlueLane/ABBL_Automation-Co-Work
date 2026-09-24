@@ -1,6 +1,6 @@
 @extends('layouts.office')
 
-@section('title', 'Co-Work Bluelane | Monitor Settings')
+@section('title', 'OneClick | Monitor Settings')
 
 @section('content')
     <div class="row">
@@ -42,12 +42,22 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <span class="text-muted">LINE_CHANNEL_ACCESS_TOKEN:</span>
-                        @if ($lineTokenConfigured)
-                            <span class="badge bg-success">พร้อมใช้งาน</span>
-                        @else
-                            <span class="badge bg-danger">ยังไม่ตั้งค่า</span>
-                        @endif
+                        <div>
+                            <span class="text-muted">LINE OA:</span>
+                            @if ($botDisplayName)
+                                <strong>{{ $botDisplayName }}</strong>
+                            @else
+                                <span class="text-muted">อ่านชื่อไม่ได้</span>
+                            @endif
+                        </div>
+                        <div class="mt-1">
+                            <span class="text-muted">LINE_CHANNEL_ACCESS_TOKEN:</span>
+                            @if ($lineTokenConfigured)
+                                <span class="badge bg-success">พร้อมใช้งาน</span>
+                            @else
+                                <span class="badge bg-danger">ยังไม่ตั้งค่า</span>
+                            @endif
+                        </div>
                     </div>
 
                     <form method="POST" action="{{ route('monitor.settings.update') }}">
@@ -62,24 +72,37 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label" for="lineGroup">กลุ่ม LINE ที่จะรับแจ้งเตือน</label>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0" for="lineGroup">กลุ่ม LINE ที่จะรับแจ้งเตือน</label>
+                                <button form="refreshGroupsForm" type="submit" class="btn btn-sm btn-soft-primary">
+                                    <i class="ri-refresh-line me-1"></i>
+                                    ดึงชื่อกลุ่มใหม่
+                                </button>
+                            </div>
                             <select class="form-select" id="lineGroup" name="line_chat_source_id">
                                 <option value="">— ยังไม่เลือก —</option>
                                 @foreach ($lineGroups as $group)
+                                    @php
+                                        $label = $group->display_name
+                                            ?: ('กลุ่มไม่มีชื่อ · '.\Illuminate\Support\Str::limit($group->source_id, 18));
+                                    @endphp
                                     <option value="{{ $group->source_id }}" @selected($selectedLineSourceId === $group->source_id)>
-                                        {{ $group->display_name ?: 'กลุ่มไม่มีชื่อ' }}
-                                        ({{ \Illuminate\Support\Str::limit($group->source_id, 16) }})
+                                        {{ $label }}
                                     </option>
                                 @endforeach
                             </select>
                             <div class="form-text">
-                                รายการมาจากกลุ่มที่ OA เข้าอยู่แล้ว และมี webhook/ข้อความเข้ามาในระบบ
+                                รายการมาจากกลุ่มที่ OA เคยได้รับ webhook แล้ว — กด “ดึงชื่อกลุ่มใหม่” ถ้ายังขึ้นว่าไม่มีชื่อ
                             </div>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary">บันทึก</button>
                         </div>
+                    </form>
+
+                    <form id="refreshGroupsForm" method="POST" action="{{ route('monitor.settings.refresh-groups') }}" class="d-none">
+                        @csrf
                     </form>
 
                     <hr>
@@ -105,8 +128,8 @@
                     <ol class="mb-3 ps-3">
                         <li class="mb-2">เชิญ LINE OA เข้ากลุ่มที่ต้องการรับแจ้งเตือน</li>
                         <li class="mb-2">ส่งข้อความใดก็ได้ในกลุ่ม (เพื่อให้ webhook บันทึกกลุ่ม)</li>
-                        <li class="mb-2">รีเฟรชหน้านี้ แล้วเลือกกลุ่มจากรายการ</li>
-                        <li class="mb-2">เปิดสวิตช์แจ้งเตือน แล้วกดบันทึก</li>
+                        <li class="mb-2">รีเฟรชหน้านี้ หรือกด “ดึงชื่อกลุ่มใหม่”</li>
+                        <li class="mb-2">เลือกกลุ่มจากรายการ แล้วเปิดสวิตช์แจ้งเตือน</li>
                         <li>กดส่งข้อความทดสอบเพื่อยืนยัน</li>
                     </ol>
 
@@ -120,6 +143,7 @@
                             @endif
                         </div>
                         <div>จำนวนกลุ่มที่รู้จัก: <strong>{{ $lineGroups->count() }}</strong></div>
+                        <div>มีชื่อแล้ว: <strong>{{ $lineGroups->filter(fn ($g) => filled($g->display_name))->count() }}</strong></div>
                         <div class="small text-muted mt-2">Timezone: {{ $displayTimezone }}</div>
                     </div>
                 </div>

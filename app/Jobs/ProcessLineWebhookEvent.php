@@ -58,7 +58,10 @@ class ProcessLineWebhookEvent implements ShouldQueue
         }
 
         if (($this->event['type'] ?? null) === 'join') {
-            $this->upsertSource($source, ['is_collecting' => false]);
+            $this->upsertSource($source, array_filter([
+                'is_collecting' => false,
+                'display_name' => $this->resolveSourceDisplayName($source, $messagingClient),
+            ], fn ($value) => $value !== null));
 
             return;
         }
@@ -76,7 +79,9 @@ class ProcessLineWebhookEvent implements ShouldQueue
             return;
         }
 
-        $chatSource = $this->upsertSource($source)->fresh();
+        $chatSource = $this->upsertSource($source, array_filter([
+            'display_name' => $this->resolveSourceDisplayName($source, $messagingClient),
+        ], fn ($value) => $value !== null))->fresh();
         $command = $parser->parse($this->event);
 
         if ($this->isAwaitingImsConfirmation($chatSource)) {
@@ -485,6 +490,21 @@ class ProcessLineWebhookEvent implements ShouldQueue
         }
 
         return null;
+    }
+
+    /**
+     * @param  array{type: string, id: string, user_id: string|null}  $source
+     */
+    private function resolveSourceDisplayName(array $source, LineMessagingClient $messagingClient): ?string
+    {
+        if ($source['type'] !== 'group') {
+            return null;
+        }
+
+        $summary = $messagingClient->getGroupSummary($source['id']);
+        $name = is_array($summary) ? ($summary['groupName'] ?? null) : null;
+
+        return is_string($name) && $name !== '' ? $name : null;
     }
 
     /**

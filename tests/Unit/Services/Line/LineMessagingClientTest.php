@@ -40,4 +40,21 @@ class LineMessagingClientTest extends TestCase
         $this->assertTrue($result);
         Http::assertSentCount(2);
     }
+
+    public function test_get_group_summary_returns_group_name(): void
+    {
+        config()->set('services.line.channel_access_token', 'test-token');
+
+        Http::fake([
+            'https://api.line.me/v2/bot/group/C123/summary' => Http::response([
+                'groupId' => 'C123',
+                'groupName' => 'Ops Alerts',
+            ]),
+        ]);
+
+        $client = new LineMessagingClient;
+        $summary = $client->getGroupSummary('C123');
+
+        $this->assertSame('Ops Alerts', $summary['groupName'] ?? null);
+    }
 }

@@ -57,6 +57,66 @@ class LineMessagingClient
     }
 
     /**
+     * @return array{groupId?: string, groupName?: string, pictureUrl?: string}|null
+     */
+    public function getGroupSummary(string $groupId): ?array
+    {
+        $accessToken = config('services.line.channel_access_token');
+
+        if ($groupId === '' || $accessToken === null || $accessToken === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::withToken($accessToken)
+                ->acceptJson()
+                ->get('https://api.line.me/v2/bot/group/'.$groupId.'/summary')
+                ->throw()
+                ->json();
+
+            return is_array($response) ? $response : null;
+        } catch (RequestException $exception) {
+            Log::warning('LINE group summary failed.', [
+                'group_id' => $groupId,
+                'status' => $exception->response?->status(),
+                'message' => $exception->getMessage(),
+                'response' => $exception->response?->json(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @return array{displayName?: string, userId?: string, basicId?: string}|null
+     */
+    public function getBotInfo(): ?array
+    {
+        $accessToken = config('services.line.channel_access_token');
+
+        if ($accessToken === null || $accessToken === '') {
+            return null;
+        }
+
+        try {
+            $response = Http::withToken($accessToken)
+                ->acceptJson()
+                ->get('https://api.line.me/v2/bot/info')
+                ->throw()
+                ->json();
+
+            return is_array($response) ? $response : null;
+        } catch (RequestException $exception) {
+            Log::warning('LINE bot info failed.', [
+                'status' => $exception->response?->status(),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      */
     private function sendTextMessages(string $accessToken, string $url, array $payload, string $logContext): bool

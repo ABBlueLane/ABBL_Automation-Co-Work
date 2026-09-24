@@ -4,6 +4,7 @@ namespace App\Services\Monitor;
 
 use App\Models\LineChatSource;
 use App\Models\MonitorSetting;
+use App\Services\Line\LineMessagingClient;
 use Illuminate\Support\Collection;
 
 class MonitorSettingsService
@@ -11,6 +12,10 @@ class MonitorSettingsService
     public const KEY_ALERTS_ENABLED = 'alerts_enabled';
 
     public const KEY_LINE_CHAT_SOURCE_ID = 'line_chat_source_id';
+
+    public function __construct(
+        private readonly LineMessagingClient $lineMessagingClient,
+    ) {}
 
     public function alertsEnabled(): bool
     {
@@ -54,13 +59,56 @@ class MonitorSettingsService
      *
      * @return Collection<int, LineChatSource>
      */
-    public function availableLineGroups(): Collection
+    public function availableLineGroups(bool $refreshNames = false): Collection
     {
+        if ($refreshNames) {
+            $this->refreshGroupDisplayNames();
+        }
+
         return LineChatSource::query()
             ->where('source_type', 'group')
-            ->orderByDesc('updated_at')
+            ->orderByRaw('CASE WHEN display_name IS NULL OR display_name = ? THEN 1 ELSE 0 END', [''])
             ->orderBy('display_name')
+            ->orderByDesc('updated_at')
             ->get();
+    }
+
+    /**
+     * Pull groupName from LINE for groups missing a display_name (or force all).
+     */
+    public function refreshGroupDisplayNames(bool $force = false): int
+    {
+        if (! $this->lineTokenConfigured()) {
+            return 0;
+        }
+
+        $query = LineChatSource::query()->where('source_type', 'group');
+        if (! $force) {
+            $query->where(function ($q): void {
+                $q->whereNull('display_name')->orWhere('display_name', '');
+            });
+        }
+
+        $updated = 0;
+
+        foreach ($query->orderBy('id')->get() as $group) {
+            $summary = $this->lineMessagingClient->getGroupSummary($group->source_id);
+            $name = is_array($summary) ? ($summary['groupName'] ?? null) : null;
+
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            if ($group->display_name === $name) {
+                continue;
+            }
+
+            $group->display_name = $name;
+            $group->save();
+            $updated++;
+        }
+
+        return $updated;
     }
 
     public function lineTokenConfigured(): bool
@@ -68,6 +116,14 @@ class MonitorSettingsService
         $token = config('services.line.channel_access_token');
 
         return is_string($token) && $token !== '';
+    }
+
+    public function botDisplayName(): ?string
+    {
+        $info = $this->lineMessagingClient->getBotInfo();
+        $name = is_array($info) ? ($info['displayName'] ?? null) : null;
+
+        return is_string($name) && $name !== '' ? $name : null;
     }
 
     /**
