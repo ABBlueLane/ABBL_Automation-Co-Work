@@ -169,10 +169,10 @@ class MonitorCheckServiceTest extends TestCase
             ->once()
             ->withArgs(function (string $to, string $text): bool {
                 return $to === 'Cgroup1'
-                    && str_contains($text, 'รายงานสถานะเว็บ Gateway')
-                    && str_contains($text, 'จุดตรวจสุขภาพระบบ')
+                    && str_contains($text, 'รายงานสถานะ Gateway')
+                    && str_contains($text, 'การทำงานของระบบ')
                     && str_contains($text, 'ใช้งานได้ปกติ')
-                    && str_contains($text, 'ตอบกลับสำเร็จ');
+                    && str_contains($text, 'ผลการตอบกลับของระบบ');
             })
             ->andReturn(true);
         $this->app->instance(LineMessagingClient::class, $line);

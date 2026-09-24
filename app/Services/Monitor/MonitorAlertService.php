@@ -87,7 +87,7 @@ class MonitorAlertService
 
         $targets = MonitorTarget::query()->orderBy('id')->get();
         $lines = [
-            'รายงานสถานะเว็บ Gateway',
+            'รายงานสถานะ Gateway',
             'เวลา '.$now.' (เวลาประเทศไทย)',
             '',
         ];
@@ -144,7 +144,7 @@ class MonitorAlertService
 
             $block = [
                 '• '.$this->friendlyTargetName($target).': '.$this->friendlyStatusLabel($statusKey),
-                '  ผลตรวจ: '.$responseText,
+                '  ผลการตอบกลับของระบบ: '.$responseText,
                 '  ความเร็วตอบกลับ: '.$latencyText,
                 '  ตรวจล่าสุด: '.$checkedAt,
             ];
@@ -159,7 +159,7 @@ class MonitorAlertService
             $detailBlocks[] = implode("\n", $block);
         }
 
-        $lines[] = 'สรุปตอนนี้: '.$this->friendlyOverallLabel($overall);
+        $lines[] = 'สถานะ: '.$this->friendlyOverallLabel($overall);
         $lines[] = '';
         $lines[] = implode("\n\n", $detailBlocks);
 
@@ -179,7 +179,7 @@ class MonitorAlertService
     private function friendlyTargetName(MonitorTarget $target): string
     {
         return match ($target->name) {
-            'gateway-health' => 'จุดตรวจสุขภาพระบบ',
+            'gateway-health' => 'การทำงานของระบบ',
             'gateway-login' => 'หน้าเข้าสู่ระบบ',
             default => $target->name,
         };
