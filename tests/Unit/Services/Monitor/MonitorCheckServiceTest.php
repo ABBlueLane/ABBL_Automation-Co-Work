@@ -169,10 +169,10 @@ class MonitorCheckServiceTest extends TestCase
             ->once()
             ->withArgs(function (string $to, string $text): bool {
                 return $to === 'Cgroup1'
-                    && str_contains($text, '[STATUS] Uptime Monitor')
-                    && str_contains($text, 'gateway-health')
-                    && str_contains($text, 'UP')
-                    && str_contains($text, '200');
+                    && str_contains($text, 'รายงานสถานะเว็บ Gateway')
+                    && str_contains($text, 'จุดตรวจสุขภาพระบบ')
+                    && str_contains($text, 'ใช้งานได้ปกติ')
+                    && str_contains($text, 'ตอบกลับสำเร็จ');
             })
             ->andReturn(true);
         $this->app->instance(LineMessagingClient::class, $line);
@@ -193,7 +193,7 @@ class MonitorCheckServiceTest extends TestCase
         $line = Mockery::mock(LineMessagingClient::class);
         $line->shouldReceive('pushText')
             ->once()
-            ->withArgs(fn (string $to, string $text) => $to === 'U123' && str_contains($text, '[DOWN]'))
+            ->withArgs(fn (string $to, string $text) => $to === 'U123' && str_contains($text, 'ระบบมีปัญหา'))
             ->andReturn(true);
 
         $this->app->instance(LineMessagingClient::class, $line);

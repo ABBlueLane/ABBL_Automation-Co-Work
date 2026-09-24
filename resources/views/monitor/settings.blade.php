@@ -96,6 +96,14 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label" for="statusMessageSuffix">ข้อความต่อท้ายตอนส่งสถานะ / แจ้งเตือน</label>
+                            <textarea class="form-control" id="statusMessageSuffix" name="status_message_suffix" rows="4" maxlength="1000" placeholder="เช่น ติดต่อทีม IT: 02-xxx-xxxx หรือ ดูรายละเอียดเพิ่มที่ ...">{{ old('status_message_suffix', $statusMessageSuffix) }}</textarea>
+                            <div class="form-text">
+                                ข้อความนี้จะถูกแนบท้ายรายงานสถานะและข้อความแจ้ง DOWN/RECOVERED ทุกครั้ง (เว้นว่างได้)
+                            </div>
+                        </div>
+
                         <div class="d-flex flex-wrap gap-2">
                             <button type="submit" class="btn btn-primary">บันทึก</button>
                         </div>

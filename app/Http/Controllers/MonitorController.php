@@ -29,6 +29,7 @@ class MonitorController extends Controller
             'lineTokenConfigured' => $settings->lineTokenConfigured(),
             'selectedGroup' => $settings->selectedLineGroup(),
             'botDisplayName' => $settings->botDisplayName(),
+            'statusMessageSuffix' => $settings->statusMessageSuffix(),
         ]);
     }
 
@@ -48,6 +49,7 @@ class MonitorController extends Controller
         $validated = $request->validate([
             'alerts_enabled' => ['nullable', 'boolean'],
             'line_chat_source_id' => ['nullable', 'string', 'max:255'],
+            'status_message_suffix' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $sourceId = $validated['line_chat_source_id'] ?? null;
@@ -66,6 +68,7 @@ class MonitorController extends Controller
         $settings->save([
             'alerts_enabled' => $request->boolean('alerts_enabled'),
             'line_chat_source_id' => $sourceId ?: null,
+            'status_message_suffix' => $validated['status_message_suffix'] ?? null,
         ]);
 
         return redirect()

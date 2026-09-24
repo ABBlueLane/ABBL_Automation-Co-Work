@@ -13,6 +13,8 @@ class MonitorSettingsService
 
     public const KEY_LINE_CHAT_SOURCE_ID = 'line_chat_source_id';
 
+    public const KEY_STATUS_MESSAGE_SUFFIX = 'status_message_suffix';
+
     public function __construct(
         private readonly LineMessagingClient $lineMessagingClient,
     ) {}
@@ -39,6 +41,11 @@ class MonitorSettingsService
         $fromEnv = trim((string) config('monitor.alerts.line_to', ''));
 
         return $fromEnv !== '' ? $fromEnv : null;
+    }
+
+    public function statusMessageSuffix(): string
+    {
+        return trim((string) ($this->get(self::KEY_STATUS_MESSAGE_SUFFIX) ?? ''));
     }
 
     public function selectedLineGroup(): ?LineChatSource
@@ -127,7 +134,7 @@ class MonitorSettingsService
     }
 
     /**
-     * @param  array{alerts_enabled?: bool, line_chat_source_id?: string|null}  $data
+     * @param  array{alerts_enabled?: bool, line_chat_source_id?: string|null, status_message_suffix?: string|null}  $data
      */
     public function save(array $data): void
     {
@@ -140,6 +147,14 @@ class MonitorSettingsService
             $this->put(
                 self::KEY_LINE_CHAT_SOURCE_ID,
                 is_string($sourceId) && $sourceId !== '' ? $sourceId : null,
+            );
+        }
+
+        if (array_key_exists('status_message_suffix', $data)) {
+            $suffix = $data['status_message_suffix'];
+            $this->put(
+                self::KEY_STATUS_MESSAGE_SUFFIX,
+                is_string($suffix) && trim($suffix) !== '' ? trim($suffix) : null,
             );
         }
     }
