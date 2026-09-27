@@ -18,17 +18,24 @@ class MonitorAlertService
 
     public function notifyDown(MonitorTarget $target, MonitorIncident $incident): bool
     {
+        if ($this->hasOtherOpenIncidentAlreadyNotifiedDown($incident)) {
+            Log::info('Monitor DOWN coalesced into existing outage alert.', [
+                'target' => $target->name,
+                'incident_id' => $incident->id,
+            ]);
+
+            return true;
+        }
+
         $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
         $startedAt = $incident->started_at?->setTimezone($timezone)->format('d/m/Y H:i').' น.';
         $cause = $this->humanCause($incident->trigger_http_status, $incident->trigger_error);
 
         $message = $this->appendSuffix(implode("\n", [
             'แจ้งเตือน: ระบบมีปัญหา',
-            'จุดตรวจ: '.$this->friendlyTargetName($target),
             'สถานะ: ใช้งานไม่ได้ในขณะนี้',
             'เริ่มมีปัญหาตั้งแต่: '.$startedAt,
             'สาเหตุโดยย่อ: '.$cause,
-            'ลิงก์ที่ตรวจ: '.$target->url,
         ]));
 
         return $this->dispatch('DOWN', $target->name, $message);
@@ -36,19 +43,24 @@ class MonitorAlertService
 
     public function notifyRecovered(MonitorTarget $target, MonitorIncident $incident): bool
     {
+        if ($this->hasOtherOpenIncident($incident)) {
+            Log::info('Monitor RECOVERED held until remaining targets recover.', [
+                'target' => $target->name,
+                'incident_id' => $incident->id,
+            ]);
+
+            return true;
+        }
+
         $timezone = config('monitor.timezone_display', 'Asia/Bangkok');
-        $startedAt = $incident->started_at?->setTimezone($timezone)->format('H:i').' น.';
-        $endedAt = $incident->ended_at?->setTimezone($timezone)->format('H:i').' น.';
-        $durationMinutes = (int) ceil(max(0, (int) ($incident->duration_seconds ?? 0)) / 60);
-        $dateLabel = $incident->started_at?->setTimezone($timezone)->format('d/m/Y') ?? '';
+        $window = $this->outageWindow($incident, $timezone);
+        $durationMinutes = (int) ceil(max(0, $window['duration_seconds']) / 60);
 
         $message = $this->appendSuffix(implode("\n", [
             'แจ้งเตือน: ระบบกลับมาใช้งานได้แล้ว',
-            'จุดตรวจ: '.$this->friendlyTargetName($target),
             'สถานะ: ใช้งานได้ปกติ',
-            'ช่วงที่มีปัญหา: '.$startedAt.' – '.$endedAt.' ('.$dateLabel.')',
+            'ช่วงที่มีปัญหา: '.$window['started_at'].' – '.$window['ended_at'].' ('.$window['date_label'].')',
             'ระยะเวลาที่ล่ม: ประมาณ '.$durationMinutes.' นาที',
-            'ลิงก์ที่ตรวจ: '.$target->url,
         ]));
 
         return $this->dispatch('RECOVERED', $target->name, $message);
@@ -174,6 +186,48 @@ class MonitorAlertService
         }
 
         return $message."\n\n".$suffix;
+    }
+
+    private function hasOtherOpenIncidentAlreadyNotifiedDown(MonitorIncident $incident): bool
+    {
+        return MonitorIncident::query()
+            ->where('status', MonitorIncident::STATUS_OPEN)
+            ->whereNotNull('notified_down_at')
+            ->when($incident->id, fn ($query) => $query->where('id', '!=', $incident->id))
+            ->exists();
+    }
+
+    private function hasOtherOpenIncident(MonitorIncident $incident): bool
+    {
+        return MonitorIncident::query()
+            ->where('status', MonitorIncident::STATUS_OPEN)
+            ->when($incident->id, fn ($query) => $query->where('id', '!=', $incident->id))
+            ->exists();
+    }
+
+    /**
+     * @return array{started_at: string, ended_at: string, date_label: string, duration_seconds: int}
+     */
+    private function outageWindow(MonitorIncident $incident, string $timezone): array
+    {
+        $related = MonitorIncident::query()
+            ->where('id', '!=', $incident->id)
+            ->whereNotNull('notified_down_at')
+            ->where('started_at', '>=', $incident->started_at?->copy()->subMinutes(15))
+            ->where('started_at', '<=', $incident->started_at?->copy()->addMinutes(15))
+            ->get();
+
+        $incidents = $related->push($incident);
+        $started = $incidents->min('started_at') ?? $incident->started_at;
+        $ended = $incidents->max('ended_at') ?? $incident->ended_at ?? now();
+        $duration = max(0, $started?->diffInSeconds($ended) ?? (int) ($incident->duration_seconds ?? 0));
+
+        return [
+            'started_at' => $started?->setTimezone($timezone)->format('H:i').' น.' ?? '-',
+            'ended_at' => $ended?->setTimezone($timezone)->format('H:i').' น.' ?? '-',
+            'date_label' => $started?->setTimezone($timezone)->format('d/m/Y') ?? '',
+            'duration_seconds' => $duration,
+        ];
     }
 
     private function friendlyTargetName(MonitorTarget $target): string

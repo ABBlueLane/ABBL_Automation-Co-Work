@@ -211,4 +211,76 @@ class MonitorCheckServiceTest extends TestCase
         $ok = app(MonitorAlertService::class)->notifyDown($target, $incident);
         $this->assertTrue($ok);
     }
+
+    public function test_two_targets_going_down_send_only_one_line_alert(): void
+    {
+        config()->set('services.line.channel_access_token', 'test-token');
+        config()->set('monitor.targets', []);
+        config()->set('monitor.alerts.mail_to', []);
+
+        app(MonitorSettingsService::class)->save([
+            'alerts_enabled' => true,
+            'line_chat_source_id' => 'Cgroup1',
+        ]);
+
+        $health = MonitorTarget::create([
+            'name' => 'gateway-health',
+            'url' => 'https://gateway.example.test/up',
+            'method' => 'GET',
+            'interval_seconds' => 60,
+            'timeout_seconds' => 5,
+            'failure_threshold' => 2,
+            'success_threshold' => 1,
+            'expected_status' => [200],
+            'is_active' => true,
+        ]);
+        $login = MonitorTarget::create([
+            'name' => 'gateway-login',
+            'url' => 'https://gateway.example.test/',
+            'method' => 'GET',
+            'interval_seconds' => 60,
+            'timeout_seconds' => 5,
+            'failure_threshold' => 2,
+            'success_threshold' => 1,
+            'expected_status' => [200],
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://gateway.example.test/up' => Http::sequence()
+                ->push('fail', 503)
+                ->push('fail', 503)
+                ->push('ok', 200),
+            'https://gateway.example.test/' => Http::sequence()
+                ->push('fail', 503)
+                ->push('fail', 503)
+                ->push('ok', 200),
+        ]);
+
+        $line = Mockery::mock(LineMessagingClient::class);
+        $line->shouldReceive('pushText')
+            ->once()
+            ->withArgs(fn (string $to, string $text) => $to === 'Cgroup1' && str_contains($text, 'ระบบมีปัญหา'))
+            ->andReturn(true);
+        $line->shouldReceive('pushText')
+            ->once()
+            ->withArgs(fn (string $to, string $text) => $to === 'Cgroup1' && str_contains($text, 'กลับมาใช้งานได้แล้ว'))
+            ->andReturn(true);
+        $this->app->instance(LineMessagingClient::class, $line);
+
+        $service = app(MonitorCheckService::class);
+
+        $service->runSingleCheck($health->fresh());
+        $service->runSingleCheck($login->fresh());
+        $this->assertSame(0, MonitorIncident::count());
+
+        $service->runSingleCheck($health->fresh());
+        $service->runSingleCheck($login->fresh());
+        $this->assertSame(2, MonitorIncident::query()->where('status', MonitorIncident::STATUS_OPEN)->count());
+
+        $service->runSingleCheck($health->fresh());
+        $service->runSingleCheck($login->fresh());
+        $this->assertSame(0, MonitorIncident::query()->where('status', MonitorIncident::STATUS_OPEN)->count());
+        $this->assertSame(2, MonitorIncident::query()->where('status', MonitorIncident::STATUS_RESOLVED)->count());
+    }
 }
