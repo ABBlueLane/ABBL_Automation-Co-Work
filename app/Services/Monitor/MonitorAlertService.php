@@ -297,11 +297,10 @@ class MonitorAlertService
 
     private function formatLatencySeconds(int $latencyMs): string
     {
-        if ($latencyMs < 1000) {
-            return $latencyMs.' มิลลิวินาที';
-        }
+        $seconds = $latencyMs / 1000;
+        $formatted = rtrim(rtrim(number_format($seconds, 2, '.', ''), '0'), '.');
 
-        return number_format($latencyMs / 1000, 1).' วินาที';
+        return ($formatted === '' ? '0' : $formatted).' วินาที';
     }
 
     private function dispatch(string $event, string $targetName, string $message): bool
