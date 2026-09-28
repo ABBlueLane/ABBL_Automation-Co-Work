@@ -39,35 +39,32 @@
                         เมื่อปิด ระบบจะไม่เริ่มสร้าง IMS จากข้อความในกลุ่ม
                     </p>
 
-                    <form method="POST" action="{{ route('settings.line_ims.update') }}">
+                    <form id="lineImsSettingsForm" method="POST" action="{{ route('settings.line_ims.update') }}">
                         @csrf
                         @method('PUT')
 
-                        <div class="mb-4">
-                            <div class="form-check form-switch form-switch-lg">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    id="receptionEnabled"
-                                    name="reception_enabled"
-                                    value="1"
-                                    @checked($receptionEnabled)
-                                >
-                                <label class="form-check-label fw-semibold" for="receptionEnabled">
-                                    เปิดรับข้อความเพื่อสร้าง IMS
-                                </label>
-                            </div>
-                            <div class="form-text mt-2">
-                                @if ($receptionEnabled)
-                                    สถานะปัจจุบัน: <span class="badge bg-success">เปิดรับข้อความ</span>
-                                @else
-                                    สถานะปัจจุบัน: <span class="badge bg-secondary">ปิดรับข้อความ</span>
-                                @endif
-                            </div>
+                        <div class="form-check form-switch form-switch-lg">
+                            <input
+                                class="form-check-input"
+                                type="checkbox"
+                                role="switch"
+                                id="receptionEnabled"
+                                name="reception_enabled"
+                                value="1"
+                                @checked($receptionEnabled)
+                                onchange="this.form.submit()"
+                            >
+                            <label class="form-check-label fw-semibold" for="receptionEnabled">
+                                เปิดรับข้อความเพื่อสร้าง IMS
+                            </label>
                         </div>
-
-                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                        <div class="form-text mt-2">
+                            @if ($receptionEnabled)
+                                สถานะปัจจุบัน: <span class="badge bg-success">เปิดรับข้อความ</span>
+                            @else
+                                สถานะปัจจุบัน: <span class="badge bg-secondary">ปิดรับข้อความ</span>
+                            @endif
+                        </div>
                     </form>
                 </div>
             </div>

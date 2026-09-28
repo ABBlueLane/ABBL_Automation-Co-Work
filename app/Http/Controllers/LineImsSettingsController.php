@@ -28,6 +28,6 @@ class LineImsSettingsController extends Controller
 
         return redirect()
             ->route('settings.line_ims.edit')
-            ->with('success', 'บันทึกการตั้งค่ารับข้อความสร้าง IMS แล้ว');
+            ->with('success', 'อัปเดตสถานะการรับข้อความสร้าง IMS แล้ว');
     }
 }
