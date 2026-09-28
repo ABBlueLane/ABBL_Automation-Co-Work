@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssueCommentController;
 use App\Http\Controllers\IssueController;
 use App\Http\Controllers\IssueProjectController;
+use App\Http\Controllers\LineImsSettingsController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\MonitorController;
@@ -135,6 +136,11 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/', 'store')->name('store');
         Route::get('/{apiClient}/edit', 'edit')->name('edit');
         Route::put('/{apiClient}', 'update')->name('update');
+    });
+
+    Route::prefix('settings/line-ims')->name('settings.line_ims.')->group(function (): void {
+        Route::get('/', [LineImsSettingsController::class, 'edit'])->name('edit');
+        Route::put('/', [LineImsSettingsController::class, 'update'])->name('update');
     });
 
     Route::controller(UserController::class)->prefix('users')->name('users.')->group(function (): void {

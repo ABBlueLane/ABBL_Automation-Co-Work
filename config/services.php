@@ -37,6 +37,7 @@ return [
             'system_user_id' => env('LINE_IMS_SYSTEM_USER_ID'),
             'auto_submit' => env('LINE_IMS_AUTO_SUBMIT', true),
             'public_base_url' => env('LINE_IMS_PUBLIC_BASE_URL', env('APP_URL')),
+            'reception_enabled' => env('LINE_IMS_RECEPTION_ENABLED', true),
         ],
     ],
 

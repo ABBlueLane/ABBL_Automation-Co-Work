@@ -37,13 +37,16 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->routeIs('api_clients.*') ? 'active' : 'collapsed' }}" href="#sidebarSettings" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('api_clients.*') ? 'true' : 'false' }}" aria-controls="sidebarSettings">
+        <a class="nav-link menu-link {{ request()->routeIs('api_clients.*') || request()->routeIs('settings.line_ims.*') ? 'active' : 'collapsed' }}" href="#sidebarSettings" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('api_clients.*') || request()->routeIs('settings.line_ims.*') ? 'true' : 'false' }}" aria-controls="sidebarSettings">
             <i class="ri-settings-3-line"></i> <span>ตั้งค่า</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->routeIs('api_clients.*') ? 'show' : '' }}" id="sidebarSettings">
+        <div class="collapse menu-dropdown {{ request()->routeIs('api_clients.*') || request()->routeIs('settings.line_ims.*') ? 'show' : '' }}" id="sidebarSettings">
             <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
                     <a href="{{ route('api_clients.index') }}" class="nav-link {{ request()->routeIs('api_clients.*') ? 'active' : '' }}">API Clients</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('settings.line_ims.edit') }}" class="nav-link {{ request()->routeIs('settings.line_ims.*') ? 'active' : '' }}">รับข้อความสร้าง IMS</a>
                 </li>
             </ul>
         </div>

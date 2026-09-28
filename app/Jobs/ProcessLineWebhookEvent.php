@@ -7,6 +7,7 @@ use App\Models\LineChatMessage;
 use App\Models\LineChatSource;
 use App\Services\Line\Ims\IssueCreateFormCompleter;
 use App\Services\Line\Ims\LineImsFormProcessor;
+use App\Services\Line\Ims\LineImsSettingsService;
 use App\Services\Line\LineCommandParser;
 use App\Services\Line\LineMessagingClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,6 +51,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
         LineCommandParser $parser,
         LineMessagingClient $messagingClient,
         LineImsFormProcessor $formProcessor,
+        LineImsSettingsService $imsSettings,
     ): void {
         $source = $this->sourcePayload();
 
@@ -84,6 +86,14 @@ class ProcessLineWebhookEvent implements ShouldQueue
         ], fn ($value) => $value !== null))->fresh();
         $command = $parser->parse($this->event);
 
+        if (! $imsSettings->receptionEnabled()) {
+            if ($command === LineCommandParser::STOP && $chatSource->is_collecting) {
+                $this->handleStopCommand($chatSource, $source, $formProcessor, $messagingClient);
+            }
+
+            return;
+        }
+
         if ($this->isAwaitingImsConfirmation($chatSource)) {
             if ($this->handleConfirmationReply($chatSource, $source, $parser, $formProcessor, $messagingClient)) {
                 return;
@@ -91,43 +101,7 @@ class ProcessLineWebhookEvent implements ShouldQueue
         }
 
         if ($command === LineCommandParser::STOP) {
-            $chatSource->refresh();
-            $submittedIssue = $formProcessor->finalizeOnStop(
-                $chatSource,
-                $this->event['replyToken'] ?? null,
-                $this->event['webhookEventId'] ?? null,
-            );
-
-            $chatSource->update([
-                'is_collecting' => false,
-                'stopped_by_user_id' => $source['user_id'],
-                'stopped_at' => now(),
-            ]);
-
-            if ($submittedIssue instanceof Issue) {
-                $messagingClient->notifyChat(
-                    $source['id'],
-                    $formProcessor->successMessage($submittedIssue, (string) $chatSource->fresh()->business_id),
-                    $this->event['replyToken'] ?? null,
-                );
-            } else {
-                $stopMessage = 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว';
-                $missingNotice = $this->incompleteFormNotice($chatSource->fresh());
-
-                if ($missingNotice !== '') {
-                    $stopMessage .= "\n{$missingNotice}";
-                } elseif (! (bool) config('services.line.ims.auto_submit', true)) {
-                    $stopMessage .= $this->draftOnlyStopNotice($chatSource->fresh());
-                } else {
-                    $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
-                }
-
-                $messagingClient->notifyChat(
-                    $source['id'],
-                    $stopMessage,
-                    $this->event['replyToken'] ?? null,
-                );
-            }
+            $this->handleStopCommand($chatSource, $source, $formProcessor, $messagingClient);
 
             return;
         }
@@ -182,6 +156,56 @@ class ProcessLineWebhookEvent implements ShouldQueue
     private function shouldProcessImsForm(LineChatSource $chatSource): bool
     {
         return $chatSource->form_type === LineChatSource::FORM_TYPE_ISSUE_CREATE;
+    }
+
+    /**
+     * @param  array{type: string, id: string, user_id: string|null}  $source
+     */
+    private function handleStopCommand(
+        LineChatSource $chatSource,
+        array $source,
+        LineImsFormProcessor $formProcessor,
+        LineMessagingClient $messagingClient,
+    ): void {
+        $chatSource->refresh();
+        $submittedIssue = $formProcessor->finalizeOnStop(
+            $chatSource,
+            $this->event['replyToken'] ?? null,
+            $this->event['webhookEventId'] ?? null,
+        );
+
+        $chatSource->update([
+            'is_collecting' => false,
+            'stopped_by_user_id' => $source['user_id'],
+            'stopped_at' => now(),
+        ]);
+
+        if ($submittedIssue instanceof Issue) {
+            $messagingClient->notifyChat(
+                $source['id'],
+                $formProcessor->successMessage($submittedIssue, (string) $chatSource->fresh()->business_id),
+                $this->event['replyToken'] ?? null,
+            );
+
+            return;
+        }
+
+        $stopMessage = 'หยุดเก็บข้อมูลในกลุ่มนี้แล้ว';
+        $missingNotice = $this->incompleteFormNotice($chatSource->fresh());
+
+        if ($missingNotice !== '') {
+            $stopMessage .= "\n{$missingNotice}";
+        } elseif (! (bool) config('services.line.ims.auto_submit', true)) {
+            $stopMessage .= $this->draftOnlyStopNotice($chatSource->fresh());
+        } else {
+            $stopMessage .= $this->draftStatusNotice($chatSource->fresh());
+        }
+
+        $messagingClient->notifyChat(
+            $source['id'],
+            $stopMessage,
+            $this->event['replyToken'] ?? null,
+        );
     }
 
     private function draftStatusNotice(LineChatSource $chatSource): string
